@@ -12,6 +12,7 @@ import ContractorDashboard from "./pages/ContractorDashboard";
 import { useAuth } from "./components/AuthContext";
 import UserStatusMessage from "./components/UserStatusMessage";
 import RoleAccessDenied from "./components/RoleAccessDenied";
+import LoadingSpinner from "./components/LoadingSpinner";
 
 function App() {
   const {
@@ -30,6 +31,11 @@ function App() {
   console.log("App render - isAdmin:", isAdmin);
   console.log("App render - isContractor:", isContractor);
   console.log("App render - userStatus:", userStatus);
+
+  // Show loading spinner while checking authentication
+  if (userStatus === "loading") {
+    return <LoadingSpinner message="Checking authentication..." />;
+  }
 
   // Show login page if user is not authenticated OR if they are new and need to choose a role
   if (!user || userStatus === "new") {

@@ -66,13 +66,22 @@ export default function UploadForm() {
       setStatus("Classifying...");
       let category;
       try {
+        // Try Teachable Machine first
         category = await predictCategory(file);
       } catch (predictionError) {
         console.warn(
-          "Prediction failed, using default category:",
+          "Teachable Machine prediction failed, trying Gemini AI:",
           predictionError
         );
-        category = "General"; // fallback category
+        
+        // Fallback to Gemini AI with description
+        try {
+          const { analyzeIssueDescription } = await import("../api/gemini");
+          category = await analyzeIssueDescription(desc, imageUrl);
+        } catch (geminiError) {
+          console.warn("Gemini AI also failed, using default:", geminiError);
+          category = "Common Area Maintenance/Housekeeping"; // fallback category
+        }
       }
 
       setPrediction(category);
