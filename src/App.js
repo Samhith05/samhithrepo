@@ -3,6 +3,10 @@ import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import UploadForm from "./components/UploadForm";
 import IssueList from "./components/IssueList";
 import AdminDashboard from "./pages/AdminDashboard";
+import ContractorDashboard from "./pages/ContractorDashboard";
+
+// Inside <Routes>
+
 
 function App() {
   return (
@@ -41,6 +45,9 @@ function App() {
           >
             Admin Dashboard
           </Link>
+          <Link to="/contractor" className="text-blue-600 font-medium">
+            Contractor View
+          </Link>
         </nav>
 
         <Routes>
@@ -64,6 +71,7 @@ function App() {
             }
           />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/contractor" element={<ContractorDashboard />} />;
         </Routes>
       </div>
     </Router>
