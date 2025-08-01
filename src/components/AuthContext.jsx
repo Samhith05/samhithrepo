@@ -46,6 +46,12 @@ export function AuthProvider({ children }) {
 
   const checkUserStatus = async (firebaseUser) => {
     try {
+      // Check if user is an admin first - admins get automatic approval
+      if (ADMIN_EMAILS.includes(firebaseUser.email)) {
+        setUserStatus("approved");
+        return;
+      }
+
       // Check if user is in approved users collection
       const userDoc = await getDoc(doc(db, "approvedUsers", firebaseUser.uid));
 
@@ -111,8 +117,8 @@ export function AuthProvider({ children }) {
 
   const isAdmin = user && ADMIN_EMAILS.includes(user.email);
   const isApprovedUser = userStatus === "approved" || isAdmin;
-  const isPendingApproval = userStatus === "pending";
-  const isDeniedUser = userStatus === "denied";
+  const isPendingApproval = userStatus === "pending" && !isAdmin;
+  const isDeniedUser = userStatus === "denied" && !isAdmin;
 
   return (
     <AuthContext.Provider
