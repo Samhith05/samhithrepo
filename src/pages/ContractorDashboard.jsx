@@ -108,7 +108,7 @@ export default function ContractorDashboard() {
   return (
     <div className="min-h-screen bg-gray-100 parallax-bg">
       {/* Header */}
-      <div className="bg-white shadow border-b premium-card" style={{borderRadius: '0', marginBottom: '0'}}>
+      <div className="bg-white shadow border-b premium-card" style={{ borderRadius: '0', marginBottom: '0' }}>
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">

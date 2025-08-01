@@ -97,7 +97,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="premium-card hover-lift neon-orange" style={{animationDelay: '0.1s'}}>
+          <div className="premium-card hover-lift neon-orange" style={{ animationDelay: '0.1s' }}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-orange-600 text-sm font-semibold mb-1">Open Issues</p>
@@ -108,7 +108,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="premium-card hover-lift" style={{animationDelay: '0.2s'}}>
+          <div className="premium-card hover-lift" style={{ animationDelay: '0.2s' }}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-yellow-600 text-sm font-semibold mb-1">In Progress</p>
@@ -119,7 +119,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="premium-card hover-lift neon-green floating-element" style={{animationDelay: '0.3s'}}>
+          <div className="premium-card hover-lift neon-green floating-element" style={{ animationDelay: '0.3s' }}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-green-600 text-sm font-semibold mb-1">Resolved</p>
@@ -288,12 +288,12 @@ export default function AdminDashboard() {
                         </span>
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${issue.status === "Open"
-                              ? "bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-300"
-                              : issue.status === "Assigned"
-                                ? "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-300"
-                                : issue.status === "In Progress"
-                                  ? "bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 border border-orange-300"
-                                  : "bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300"
+                            ? "bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-300"
+                            : issue.status === "Assigned"
+                              ? "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-300"
+                              : issue.status === "In Progress"
+                                ? "bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 border border-orange-300"
+                                : "bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300"
                             }`}
                         >
                           {issue.status}

@@ -16,6 +16,8 @@
   <meta property="og:description"
     content="Smart AI-powered maintenance management system for community housing and facilities" />
   <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://resolv-ai.netlify.app" />
+  <meta property="og:image" content="%PUBLIC_URL%/logo512.png" />
 
   <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
   <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
@@ -37,7 +39,7 @@
   </noscript>
 
   <!-- Loading fallback while React loads -->
-  <div id="loading-fallback" style="
+  <div id="loading-fallback" role="status" aria-label="Loading application" style="
     position: fixed; 
     top: 0; 
     left: 0; 
@@ -51,15 +53,17 @@
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     z-index: 9999;
   ">
-    <div style="
+    <div aria-hidden="true" style="
       width: 60px; 
       height: 60px; 
       border: 4px solid transparent; 
       border-radius: 50%; 
       background: conic-gradient(from 0deg, #ffffff, #f0f0f0, #ffffff);
       animation: premium-spin 1.5s linear infinite;
+      -webkit-animation: premium-spin 1.5s linear infinite;
       position: relative;
       margin-bottom: 30px;
+      will-change: transform;
     "></div>
     <h2 style="
       color: white; 
@@ -79,15 +83,52 @@
       color: rgba(255,255,255,0.7);
       font-size: 14px;
       animation: pulse 2s infinite;
-    ">Loading your workspace...</div>
+      -webkit-animation: pulse 2s infinite;
+      will-change: opacity;
+    " aria-live="polite">Loading your workspace...</div>
     <style>
       @keyframes premium-spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+          transform: rotate(0deg);
+        }
+
+        100% {
+          transform: rotate(360deg);
+        }
       }
+
+      @-webkit-keyframes premium-spin {
+        0% {
+          -webkit-transform: rotate(0deg);
+        }
+
+        100% {
+          -webkit-transform: rotate(360deg);
+        }
+      }
+
       @keyframes pulse {
-        0%, 100% { opacity: 0.7; }
-        50% { opacity: 1; }
+
+        0%,
+        100% {
+          opacity: 0.7;
+        }
+
+        50% {
+          opacity: 1;
+        }
+      }
+
+      @-webkit-keyframes pulse {
+
+        0%,
+        100% {
+          opacity: 0.7;
+        }
+
+        50% {
+          opacity: 1;
+        }
       }
     </style>
   </div>
@@ -97,13 +138,27 @@
   <!-- Hide loading fallback once React loads -->
   <script>
     window.addEventListener('DOMContentLoaded', function () {
-      // Hide loading fallback after a short delay to ensure React has time to mount
-      setTimeout(function () {
-        const loadingFallback = document.getElementById('loading-fallback');
-        if (loadingFallback) {
-          loadingFallback.style.display = 'none';
+      // Hide loading fallback after React has time to mount
+      // Check if React has mounted by looking for React root content
+      const checkReactMounted = () => {
+        const root = document.getElementById('root');
+        if (root && root.children.length > 0) {
+          const loadingFallback = document.getElementById('loading-fallback');
+          if (loadingFallback) {
+            loadingFallback.style.opacity = '0';
+            loadingFallback.style.transition = 'opacity 0.3s ease-out';
+            setTimeout(() => {
+              loadingFallback.style.display = 'none';
+            }, 300);
+          }
+        } else {
+          // Check again after a short delay
+          setTimeout(checkReactMounted, 100);
         }
-      }, 1000);
+      };
+
+      // Start checking after initial delay
+      setTimeout(checkReactMounted, 500);
     });
   </script>
 </body>
