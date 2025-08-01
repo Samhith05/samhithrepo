@@ -110,29 +110,29 @@ export default function ContractorDashboard() {
       {/* Header */}
       <div className="bg-white shadow border-b">
         <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-800">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-800">
                 👷 Contractor Dashboard
               </h1>
-              <div className="flex items-center gap-2">
-                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="bg-gradient-to-r from-green-100 to-green-200 text-green-700 px-3 py-1 rounded-full text-xs md:text-sm font-medium border border-green-300">
                   {contractorCategory}
                 </span>
-                <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-medium">
+                <span className="bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 px-2 py-1 rounded-full text-xs font-medium border border-blue-300">
                   Contractor
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
               {user && (
-                <span className="text-sm text-gray-600">
+                <span className="text-xs md:text-sm text-gray-600 truncate max-w-48">
                   Welcome, {user.displayName || user.email}
                 </span>
               )}
               <button
                 onClick={logout}
-                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
+                className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-200 transform hover:scale-105 shadow-md text-sm"
               >
                 Logout
               </button>
@@ -144,8 +144,9 @@ export default function ContractorDashboard() {
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 py-6">
         {loading ? (
-          <div className="text-center py-8">
-            <p className="text-gray-500">Loading your assigned issues...</p>
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-500 text-lg">Loading your assigned issues...</p>
           </div>
         ) : !contractorCategory ? (
           <div className="bg-white rounded-lg shadow border p-6 text-center">
@@ -162,39 +163,42 @@ export default function ContractorDashboard() {
           <>
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-white rounded-lg shadow border p-4">
+              <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg shadow-lg border border-yellow-200 p-4 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-2xl font-bold text-yellow-600">
+                    <p className="text-3xl font-bold text-yellow-700 mb-1">
                       {openIssues.length}
                     </p>
-                    <p className="text-sm text-gray-600">Open Issues</p>
+                    <p className="text-sm font-medium text-yellow-600">Open Issues</p>
+                    <p className="text-xs text-yellow-500 mt-1">Awaiting Assignment</p>
                   </div>
-                  <div className="text-2xl">🚨</div>
+                  <div className="text-3xl opacity-80">🚨</div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow border p-4">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-lg border border-blue-200 p-4 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-2xl font-bold text-blue-600">
+                    <p className="text-3xl font-bold text-blue-700 mb-1">
                       {assignedIssues.length}
                     </p>
-                    <p className="text-sm text-gray-600">In Progress</p>
+                    <p className="text-sm font-medium text-blue-600">In Progress</p>
+                    <p className="text-xs text-blue-500 mt-1">Currently Working</p>
                   </div>
-                  <div className="text-2xl">🔧</div>
+                  <div className="text-3xl opacity-80">🔧</div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow border p-4">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg shadow-lg border border-green-200 p-4 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-2xl font-bold text-green-600">
+                    <p className="text-3xl font-bold text-green-700 mb-1">
                       {resolvedIssues.length}
                     </p>
-                    <p className="text-sm text-gray-600">Completed</p>
+                    <p className="text-sm font-medium text-green-600">Completed</p>
+                    <p className="text-xs text-green-500 mt-1">Successfully Resolved</p>
                   </div>
-                  <div className="text-2xl">✅</div>
+                  <div className="text-3xl opacity-80">✅</div>
                 </div>
               </div>
             </div>

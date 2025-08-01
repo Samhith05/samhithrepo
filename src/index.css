@@ -1,4 +1,5 @@
 /* Custom CSS to replace Tailwind classes */
+@import './styles/animations.css';
 
 /* Reset and base styles */
 * {

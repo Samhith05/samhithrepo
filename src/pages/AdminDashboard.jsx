@@ -16,6 +16,14 @@ export default function AdminDashboard() {
   const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
 
+  // Calculate dashboard stats
+  const dashboardStats = {
+    total: issues.length,
+    open: issues.filter(issue => issue.status === 'Open').length,
+    inProgress: issues.filter(issue => issue.status === 'In Progress').length,
+    resolved: issues.filter(issue => issue.status === 'Resolved').length,
+  };
+
   useEffect(() => {
     if (!isAdmin) {
       alert("Access Denied: Admins only.");
@@ -76,6 +84,48 @@ export default function AdminDashboard() {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+        {/* Dashboard Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 rounded-lg shadow-md transform transition-all duration-200 hover:scale-105">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm">Total Issues</p>
+                <p className="text-2xl font-bold">{dashboardStats.total}</p>
+              </div>
+              <div className="text-3xl opacity-80">📋</div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white p-4 rounded-lg shadow-md transform transition-all duration-200 hover:scale-105">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-orange-100 text-sm">Open</p>
+                <p className="text-2xl font-bold">{dashboardStats.open}</p>
+              </div>
+              <div className="text-3xl opacity-80">🆕</div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white p-4 rounded-lg shadow-md transform transition-all duration-200 hover:scale-105">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-yellow-100 text-sm">In Progress</p>
+                <p className="text-2xl font-bold">{dashboardStats.inProgress}</p>
+              </div>
+              <div className="text-3xl opacity-80">⚡</div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-green-500 to-green-600 text-white p-4 rounded-lg shadow-md transform transition-all duration-200 hover:scale-105">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-100 text-sm">Resolved</p>
+                <p className="text-2xl font-bold">{dashboardStats.resolved}</p>
+              </div>
+              <div className="text-3xl opacity-80">✅</div>
+            </div>
+          </div>
+        </div>
         {/* User Management Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* User Approval Manager */}
@@ -155,40 +205,40 @@ export default function AdminDashboard() {
                 {issues.map((issue) => (
                   <div
                     key={issue.id}
-                    className="bg-white border border-gray-200 rounded p-4 hover:shadow-md transition-shadow"
+                    className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] hover:border-blue-300"
                   >
                     {/* Issue Image */}
                     <div className="flex flex-col sm:flex-row gap-3 mb-3">
                       <img
                         src={issue.imageUrl}
                         alt="issue"
-                        className="w-full sm:w-28 h-28 object-cover rounded"
+                        className="w-full sm:w-28 h-28 object-cover rounded-lg shadow-sm transition-transform duration-200 hover:scale-105"
                       />
 
                       {/* Issue Details */}
                       <div className="flex-1 space-y-2">
-                        <div className="bg-blue-50 p-2 rounded">
-                          <p className="text-sm text-blue-700 font-medium mb-1">
-                            Description
+                        <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-3 rounded-lg border border-blue-200">
+                          <p className="text-sm text-blue-700 font-medium mb-1 flex items-center gap-1">
+                            📝 Description
                           </p>
-                          <p className="text-gray-800 text-sm">
+                          <p className="text-gray-800 text-sm leading-relaxed">
                             {issue.description}
                           </p>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <div className="bg-purple-50 p-2 rounded">
-                            <p className="text-sm text-purple-700 font-medium">
-                              Category
+                          <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-3 rounded-lg border border-purple-200">
+                            <p className="text-sm text-purple-700 font-medium flex items-center gap-1">
+                              🏷️ Category
                             </p>
                             <p className="text-gray-800 font-semibold text-sm">
                               {issue.category}
                             </p>
                           </div>
 
-                          <div className="bg-green-50 p-2 rounded">
-                            <p className="text-sm text-green-700 font-medium">
-                              Assigned To
+                          <div className="bg-gradient-to-r from-green-50 to-green-100 p-3 rounded-lg border border-green-200">
+                            <p className="text-sm text-green-700 font-medium flex items-center gap-1">
+                              👨‍🔧 Assigned To
                             </p>
                             <p className="text-gray-800 font-semibold text-sm">
                               {issue.assignedTo}
@@ -198,19 +248,17 @@ export default function AdminDashboard() {
 
                         {/* Additional Info */}
                         {(issue.userEmail || issue.createdAt) && (
-                          <div className="bg-gray-50 p-2 rounded">
+                          <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-3 rounded-lg border border-gray-200">
                             {issue.userEmail && (
-                              <p className="text-xs text-gray-600 mb-1">
-                                <span className="font-medium">
-                                  Reported by:
-                                </span>{" "}
-                                {issue.userEmail}
+                              <p className="text-xs text-gray-600 mb-1 flex items-center gap-1">
+                                <span className="font-medium">👤 Reported by:</span>
+                                <span className="text-blue-600">{issue.userEmail}</span>
                               </p>
                             )}
                             {issue.createdAt && (
-                              <p className="text-xs text-gray-600">
-                                <span className="font-medium">Date:</span>{" "}
-                                {issue.createdAt.toDate().toLocaleDateString()}
+                              <p className="text-xs text-gray-600 flex items-center gap-1">
+                                <span className="font-medium">📅 Date:</span>
+                                <span>{issue.createdAt.toDate().toLocaleDateString()}</span>
                               </p>
                             )}
                           </div>
@@ -219,29 +267,30 @@ export default function AdminDashboard() {
                     </div>
 
                     {/* Status Progress Bar */}
-                    <div className="mb-3">
-                      <p className="text-sm font-medium text-gray-600 mb-2">
-                        Progress Timeline
+                    <div className="mb-4">
+                      <p className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-1">
+                        📊 Progress Timeline
                       </p>
-                      <div className="bg-gray-50 p-2 rounded">
+                      <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-3 rounded-lg border border-gray-200">
                         <StatusProgress currentStatus={issue.status} />
                       </div>
                     </div>
 
                     {/* Status and Controls */}
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-3 border-t border-gray-200">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-4 border-t border-gray-200">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-600">
+                        <span className="text-sm font-medium text-gray-700">
                           Current Status:
                         </span>
                         <span
-                          className={`px-2 py-1 rounded text-xs font-semibold ${
-                            issue.status === "Open"
-                              ? "bg-yellow-100 text-yellow-800"
+                          className={`px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${issue.status === "Open"
+                              ? "bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-300"
                               : issue.status === "Assigned"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-green-100 text-green-800"
-                          }`}
+                                ? "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-300"
+                                : issue.status === "In Progress"
+                                  ? "bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 border border-orange-300"
+                                  : "bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300"
+                            }`}
                         >
                           {issue.status}
                         </span>
