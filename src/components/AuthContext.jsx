@@ -30,19 +30,25 @@ export const useAuth = () => useContext(AuthContext);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [userStatus, setUserStatus] = useState("loading"); // "loading", "approved", "pending", "denied"
+  const [attemptedRole, setAttemptedRole] = useState(null);
+  const [roleError, setRoleError] = useState(null);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
         await checkUserStatus(firebaseUser);
+        // Check role access after user is authenticated
+        checkRoleAccess(firebaseUser);
       } else {
         setUser(null);
         setUserStatus("loading");
+        setAttemptedRole(null);
+        setRoleError(null);
       }
     });
     return () => unsub();
-  }, []);
+  }, [attemptedRole]);
 
   const checkUserStatus = async (firebaseUser) => {
     try {
@@ -82,6 +88,26 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const checkRoleAccess = (firebaseUser) => {
+    if (!attemptedRole) return;
+
+    const isUserAdmin = ADMIN_EMAILS.includes(firebaseUser.email);
+
+    if (attemptedRole === "admin" && !isUserAdmin) {
+      setRoleError({
+        type: "admin_access_denied",
+        message:
+          "Access Denied: You do not have administrator privileges. Please contact an administrator if you believe this is an error.",
+      });
+    } else {
+      // Clear any previous errors if access is valid
+      setRoleError(null);
+    }
+
+    // Clear attempted role after checking
+    setAttemptedRole(null);
+  };
+
   const createApprovalRequest = async (firebaseUser) => {
     try {
       // Add to pending approvals collection
@@ -108,12 +134,18 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const login = () => {
+  const login = (role = null) => {
+    setAttemptedRole(role);
+    setRoleError(null);
     const provider = new GoogleAuthProvider();
     return signInWithPopup(auth, provider);
   };
 
-  const logout = () => signOut(auth);
+  const logout = () => {
+    setRoleError(null);
+    setAttemptedRole(null);
+    return signOut(auth);
+  };
 
   const isAdmin = user && ADMIN_EMAILS.includes(user.email);
   const isApprovedUser = userStatus === "approved" || isAdmin;
@@ -131,6 +163,8 @@ export function AuthProvider({ children }) {
         isPendingApproval,
         isDeniedUser,
         userStatus,
+        roleError,
+        clearRoleError: () => setRoleError(null),
       }}
     >
       {children}

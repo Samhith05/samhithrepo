@@ -11,10 +11,17 @@ import AdminDashboard from "./pages/AdminDashboard";
 import ContractorDashboard from "./pages/ContractorDashboard";
 import { useAuth } from "./components/AuthContext";
 import UserStatusMessage from "./components/UserStatusMessage";
+import RoleAccessDenied from "./components/RoleAccessDenied";
 
 function App() {
-  const { user, isAdmin, isApprovedUser, isPendingApproval, isDeniedUser } =
-    useAuth();
+  const {
+    user,
+    isAdmin,
+    isApprovedUser,
+    isPendingApproval,
+    isDeniedUser,
+    roleError,
+  } = useAuth();
 
   // Show login page if user is not authenticated
   if (!user) {
@@ -26,6 +33,11 @@ function App() {
         </Routes>
       </Router>
     );
+  }
+
+  // Show role access denied if user tried to access unauthorized role
+  if (roleError) {
+    return <RoleAccessDenied />;
   }
 
   // Show status message for pending or denied users

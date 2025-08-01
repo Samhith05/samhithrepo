@@ -1,9 +1,21 @@
 // src/pages/LoginPage.jsx
 
+import { useState } from "react";
 import { useAuth } from "../components/AuthContext";
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const [attemptedRole, setAttemptedRole] = useState(null);
+
+  const handleRoleLogin = async (role) => {
+    setAttemptedRole(role);
+    try {
+      await login(role);
+    } catch (error) {
+      console.error("Login failed:", error);
+      setAttemptedRole(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
@@ -26,7 +38,7 @@ export default function LoginPage() {
 
           {/* User Login */}
           <button
-            onClick={login}
+            onClick={() => handleRoleLogin("user")}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded transition-colors flex items-center justify-center gap-3"
           >
             <span className="text-xl">👤</span>
@@ -38,7 +50,7 @@ export default function LoginPage() {
 
           {/* Admin Login */}
           <button
-            onClick={login}
+            onClick={() => handleRoleLogin("admin")}
             className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded transition-colors flex items-center justify-center gap-3"
           >
             <span className="text-xl">👑</span>
@@ -52,7 +64,7 @@ export default function LoginPage() {
 
           {/* Contractor Login */}
           <button
-            onClick={login}
+            onClick={() => handleRoleLogin("contractor")}
             className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded transition-colors flex items-center justify-center gap-3"
           >
             <span className="text-xl">👷</span>
