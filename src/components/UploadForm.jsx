@@ -1,0 +1,138 @@
+// src/components/UploadForm.jsx
+
+import { useState } from "react";
+import axios from "axios";
+import { db } from "../firebase";
+import { collection, addDoc, Timestamp } from "firebase/firestore";
+import predictCategory from "../utils/predictCategory";
+import assignTechnician from "../utils/assignTechnician";
+
+const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dkupo9ghd/image/upload";
+const UPLOAD_PRESET = "public_upload";
+
+export default function UploadForm() {
+  const [file, setFile] = useState(null);
+  const [desc, setDesc] = useState("");
+  const [status, setStatus] = useState("");
+  const [prediction, setPrediction] = useState("");
+
+  const handleSubmit = async () => {
+    if (!file || !desc) {
+      alert("Please provide both image and description.");
+      return;
+    }
+
+    try {
+      setStatus("Uploading to Cloudinary...");
+
+      // 🖼 Upload image to Cloudinary
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", UPLOAD_PRESET);
+
+      const res = await axios.post(CLOUDINARY_URL, formData);
+
+      if (!res.data || !res.data.secure_url) {
+        throw new Error("Failed to upload image to Cloudinary");
+      }
+
+      const imageUrl = res.data.secure_url;
+
+      setStatus("Classifying...");
+      let category;
+      try {
+        category = await predictCategory(file);
+      } catch (predictionError) {
+        console.warn(
+          "Prediction failed, using default category:",
+          predictionError
+        );
+        category = "General"; // fallback category
+      }
+
+      setPrediction(category);
+
+      const technician = assignTechnician(category);
+
+      setStatus("Saving to Firestore...");
+      await addDoc(collection(db, "issues"), {
+        imageUrl,
+        description: desc,
+        category,
+        assignedTo: technician.name,
+        contact: technician.contact,
+        status: "Open",
+        createdAt: Timestamp.now(),
+      });
+
+      setStatus("Submitted ✅");
+      setFile(null);
+      setDesc("");
+      setPrediction("");
+    } catch (err) {
+      console.error("Upload error:", err);
+
+      // Provide more specific error messages
+      if (err.code === "permission-denied") {
+        setStatus("Error: Permission denied. Check Firebase rules.");
+      } else if (err.message?.includes("Cloudinary")) {
+        setStatus("Error: Failed to upload image.");
+      } else if (err.message?.includes("network")) {
+        setStatus("Error: Network connection issue.");
+      } else {
+        setStatus(`Error submitting: ${err.message || "Unknown error"}`);
+      }
+    }
+  };
+
+  return (
+    <div className="max-w-md mx-auto p-4 bg-white rounded shadow-md mb-4">
+      <h2 className="text-2xl font-semibold mb-4">Report an Issue</h2>
+
+      {/* File Upload */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-2">Upload Image:</label>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setFile(e.target.files[0])}
+          className="w-full border px-4 py-2"
+        />
+      </div>
+
+      {/* Description */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-2">Description:</label>
+        <textarea
+          value={desc}
+          onChange={(e) => setDesc(e.target.value)}
+          placeholder="Describe the issue..."
+          rows="3"
+          className="w-full border px-4 py-2"
+        />
+      </div>
+
+      {/* Submit Button */}
+      <button
+        onClick={handleSubmit}
+        className="w-full bg-blue-600 text-white px-4 py-2 hover:bg-blue-700"
+      >
+        Submit Issue
+      </button>
+
+      {/* Status */}
+      {status && (
+        <div className="mt-2 text-sm text-gray-600">
+          <strong>Status:</strong> {status}
+        </div>
+      )}
+
+      {/* Prediction */}
+      {prediction && (
+        <div className="mt-2 text-sm text-green-600">
+          <strong>Predicted Category:</strong> {prediction}
+        </div>
+      )}
+    </div>
+  );
+}
