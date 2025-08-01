@@ -17,12 +17,19 @@ export default function UploadForm() {
   const [status, setStatus] = useState("");
   const [prediction, setPrediction] = useState("");
 
-  const { user, login } = useAuth();
+  const { user, login, isApprovedUser } = useAuth();
 
   const handleSubmit = async () => {
-    // Check if user is authenticated first
+    // Check if user is authenticated and approved
     if (!user) {
       alert("Please log in first to submit an issue.");
+      return;
+    }
+
+    if (!isApprovedUser) {
+      alert(
+        "Your account is not yet approved. Please wait for admin approval."
+      );
       return;
     }
 
@@ -113,6 +120,16 @@ export default function UploadForm() {
             Sign in with Google
           </button>
         </div>
+      ) : !isApprovedUser ? (
+        <div className="mb-4 p-3 bg-orange-100 border border-orange-300 rounded">
+          <p className="text-sm text-orange-800">
+            Your account is pending approval. You cannot submit issues until
+            approved by an admin.
+          </p>
+          <p className="text-xs text-orange-600 mt-1">
+            Logged in as: {user.displayName || user.email}
+          </p>
+        </div>
       ) : (
         <div className="mb-4 p-3 bg-green-100 border border-green-300 rounded">
           <p className="text-sm text-green-800">
@@ -129,7 +146,7 @@ export default function UploadForm() {
           accept="image/*"
           onChange={(e) => setFile(e.target.files[0])}
           className="w-full border px-4 py-2"
-          disabled={!user}
+          disabled={!user || !isApprovedUser}
         />
       </div>
 
@@ -142,7 +159,7 @@ export default function UploadForm() {
           placeholder="Describe the issue..."
           rows="3"
           className="w-full border px-4 py-2"
-          disabled={!user}
+          disabled={!user || !isApprovedUser}
         />
       </div>
 
@@ -150,11 +167,11 @@ export default function UploadForm() {
       <button
         onClick={handleSubmit}
         className={`w-full px-4 py-2 ${
-          user
+          user && isApprovedUser
             ? "bg-blue-600 text-white hover:bg-blue-700"
             : "bg-gray-400 text-gray-700 cursor-not-allowed"
         }`}
-        disabled={!user}
+        disabled={!user || !isApprovedUser}
       >
         Submit Issue
       </button>

@@ -4,10 +4,36 @@ import UploadForm from "./components/UploadForm";
 import IssueList from "./components/IssueList";
 import AdminDashboard from "./pages/AdminDashboard";
 import ContractorDashboard from "./pages/ContractorDashboard";
+import { useAuth } from "./components/AuthContext";
+import UserStatusMessage from "./components/UserStatusMessage";
 
 // Inside <Routes>
 
 function App() {
+  const {
+    user,
+    login,
+    logout,
+    isAdmin,
+    isApprovedUser,
+    isPendingApproval,
+    isDeniedUser,
+  } = useAuth();
+
+  // Show status message for pending or denied users
+  if (user && (isPendingApproval || isDeniedUser)) {
+    return (
+      <div
+        style={{
+          backgroundColor: "lightgray",
+          minHeight: "100vh",
+          padding: "20px",
+        }}
+      >
+        <UserStatusMessage />
+      </div>
+    );
+  }
   return (
     <Router>
       <div style={{ backgroundColor: "lightgray", minHeight: "100vh" }}>
@@ -33,17 +59,19 @@ function App() {
           >
             User View
           </Link>
-          <Link
-            to="/admin"
-            style={{
-              color: "#2563eb",
-              fontWeight: "500",
-              textDecoration: "none",
-              fontSize: "16px",
-            }}
-          >
-            Admin Dashboard
-          </Link>
+          {isAdmin && (
+            <Link
+              to="/admin"
+              style={{
+                color: "#2563eb",
+                fontWeight: "500",
+                textDecoration: "none",
+                fontSize: "16px",
+              }}
+            >
+              Admin Dashboard
+            </Link>
+          )}
           <Link to="/contractor" className="text-blue-600 font-medium">
             Contractor View
           </Link>
