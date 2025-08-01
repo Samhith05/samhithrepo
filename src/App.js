@@ -7,7 +7,6 @@ import ContractorDashboard from "./pages/ContractorDashboard";
 
 // Inside <Routes>
 
-
 function App() {
   return (
     <Router>
@@ -71,7 +70,7 @@ function App() {
             }
           />
           <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/contractor" element={<ContractorDashboard />} />;
+          <Route path="/contractor" element={<ContractorDashboard />} />
         </Routes>
       </div>
     </Router>

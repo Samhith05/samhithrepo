@@ -32,12 +32,14 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/Siddarth-01/Resolv.git
 cd Resolv
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
@@ -93,17 +95,20 @@ src/
 ## Features Overview
 
 ### Issue Management
+
 - Upload images of maintenance issues
 - Automatic categorization using AI
 - Real-time status updates
 - Progress tracking with visual timeline
 
 ### Dashboard Views
+
 - **Admin**: Complete oversight of all issues
 - **Contractor**: Focused view of assigned tasks
 - Real-time updates across all dashboards
 
 ### Status Workflow
+
 1. **Open** - Issue submitted
 2. **Assigned** - Technician assigned
 3. **Resolved** - Issue completed

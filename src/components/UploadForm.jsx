@@ -6,6 +6,7 @@ import { db } from "../firebase";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 import predictCategory from "../utils/predictCategory";
 import assignTechnician from "../utils/assignTechnician";
+import { useAuth } from "../components/AuthContext";
 
 const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dkupo9ghd/image/upload";
 const UPLOAD_PRESET = "public_upload";
@@ -16,7 +17,15 @@ export default function UploadForm() {
   const [status, setStatus] = useState("");
   const [prediction, setPrediction] = useState("");
 
+  const { user, login } = useAuth();
+
   const handleSubmit = async () => {
+    // Check if user is authenticated first
+    if (!user) {
+      alert("Please log in first to submit an issue.");
+      return;
+    }
+
     if (!file || !desc) {
       alert("Please provide both image and description.");
       return;
@@ -56,6 +65,8 @@ export default function UploadForm() {
 
       setStatus("Saving to Firestore...");
       await addDoc(collection(db, "issues"), {
+        userEmail: user.email || "anonymous@example.com",
+        userName: user.displayName || user.email || "Anonymous User",
         imageUrl,
         description: desc,
         category,
@@ -89,6 +100,27 @@ export default function UploadForm() {
     <div className="max-w-md mx-auto p-4 bg-white rounded shadow-md mb-4">
       <h2 className="text-2xl font-semibold mb-4">Report an Issue</h2>
 
+      {/* Authentication Status */}
+      {!user ? (
+        <div className="mb-4 p-3 bg-yellow-100 border border-yellow-300 rounded">
+          <p className="text-sm text-yellow-800 mb-2">
+            Please log in to submit an issue.
+          </p>
+          <button
+            onClick={login}
+            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+          >
+            Sign in with Google
+          </button>
+        </div>
+      ) : (
+        <div className="mb-4 p-3 bg-green-100 border border-green-300 rounded">
+          <p className="text-sm text-green-800">
+            Logged in as: {user.displayName || user.email}
+          </p>
+        </div>
+      )}
+
       {/* File Upload */}
       <div className="mb-4">
         <label className="block text-sm font-medium mb-2">Upload Image:</label>
@@ -97,6 +129,7 @@ export default function UploadForm() {
           accept="image/*"
           onChange={(e) => setFile(e.target.files[0])}
           className="w-full border px-4 py-2"
+          disabled={!user}
         />
       </div>
 
@@ -109,13 +142,19 @@ export default function UploadForm() {
           placeholder="Describe the issue..."
           rows="3"
           className="w-full border px-4 py-2"
+          disabled={!user}
         />
       </div>
 
       {/* Submit Button */}
       <button
         onClick={handleSubmit}
-        className="w-full bg-blue-600 text-white px-4 py-2 hover:bg-blue-700"
+        className={`w-full px-4 py-2 ${
+          user
+            ? "bg-blue-600 text-white hover:bg-blue-700"
+            : "bg-gray-400 text-gray-700 cursor-not-allowed"
+        }`}
+        disabled={!user}
       >
         Submit Issue
       </button>
