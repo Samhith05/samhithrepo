@@ -8,7 +8,7 @@ export default function UserStatusMessage() {
 
   if (isPendingApproval) {
     return (
-      <div className="max-w-md mx-auto p-6 bg-yellow-100 border border-yellow-300 rounded-lg shadow-md text-center">
+      <div className="max-w-md mx-auto p-4 bg-yellow-50 border border-yellow-200 rounded shadow text-center">
         <h2 className="text-xl font-semibold text-yellow-800 mb-3">
           ⏳ Approval Pending
         </h2>
@@ -31,7 +31,7 @@ export default function UserStatusMessage() {
 
   if (isDeniedUser) {
     return (
-      <div className="max-w-md mx-auto p-6 bg-red-100 border border-red-300 rounded-lg shadow-md text-center">
+      <div className="max-w-md mx-auto p-4 bg-red-50 border border-red-200 rounded shadow text-center">
         <h2 className="text-xl font-semibold text-red-800 mb-3">
           ❌ Access Denied
         </h2>

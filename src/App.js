@@ -1,106 +1,93 @@
 // src/App.js
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import UploadForm from "./components/UploadForm";
-import IssueList from "./components/IssueList";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import LoginPage from "./pages/LoginPage";
+import UserDashboard from "./pages/UserDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import ContractorDashboard from "./pages/ContractorDashboard";
 import { useAuth } from "./components/AuthContext";
 import UserStatusMessage from "./components/UserStatusMessage";
 
-// Inside <Routes>
-
 function App() {
-  const {
-    user,
-    login,
-    logout,
-    isAdmin,
-    isApprovedUser,
-    isPendingApproval,
-    isDeniedUser,
-  } = useAuth();
+  const { user, isAdmin, isApprovedUser, isPendingApproval, isDeniedUser } =
+    useAuth();
+
+  // Show login page if user is not authenticated
+  if (!user) {
+    return (
+      <Router>
+        <Routes>
+          <Route path="/" element={<LoginPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+    );
+  }
 
   // Show status message for pending or denied users
-  if (user && (isPendingApproval || isDeniedUser)) {
+  if (isPendingApproval || isDeniedUser) {
     return (
-      <div
-        style={{
-          backgroundColor: "lightgray",
-          minHeight: "100vh",
-          padding: "20px",
-        }}
-      >
+      <div className="min-h-screen bg-gray-100 p-4">
         <UserStatusMessage />
       </div>
     );
   }
+
+  // Main application with authenticated and approved users
   return (
     <Router>
-      <div style={{ backgroundColor: "lightgray", minHeight: "100vh" }}>
-        {/* Navigation Bar */}
-        <nav
-          style={{
-            backgroundColor: "white",
-            padding: "16px",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-            marginBottom: "16px",
-            display: "flex",
-            gap: "16px",
-          }}
-        >
-          <Link
-            to="/"
-            style={{
-              color: "#2563eb",
-              fontWeight: "500",
-              textDecoration: "none",
-              fontSize: "16px",
-            }}
-          >
-            User View
-          </Link>
-          {isAdmin && (
-            <Link
-              to="/admin"
-              style={{
-                color: "#2563eb",
-                fontWeight: "500",
-                textDecoration: "none",
-                fontSize: "16px",
-              }}
-            >
-              Admin Dashboard
-            </Link>
-          )}
-          <Link to="/contractor" className="text-blue-600 font-medium">
-            Contractor View
-          </Link>
-        </nav>
+      <Routes>
+        {/* Admin Dashboard - Prioritize admins to their dashboard */}
+        <Route
+          path="/"
+          element={
+            isAdmin ? (
+              <AdminDashboard />
+            ) : isApprovedUser ? (
+              <UserDashboard />
+            ) : (
+              <div className="min-h-screen bg-gray-100 p-4">
+                <UserStatusMessage />
+              </div>
+            )
+          }
+        />
 
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <>
-                <h1
-                  style={{
-                    textAlign: "center",
-                    fontSize: "32px",
-                    fontWeight: "bold",
-                    padding: "20px",
-                  }}
-                >
-                  AI Maintenance System
-                </h1>
-                <UploadForm />
-                <IssueList />
-              </>
-            }
-          />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/contractor" element={<ContractorDashboard />} />
-        </Routes>
-      </div>
+        {/* Admin Dashboard - Direct route for admins */}
+        <Route
+          path="/admin"
+          element={isAdmin ? <AdminDashboard /> : <Navigate to="/" replace />}
+        />
+
+        {/* User Dashboard - Direct route for users */}
+        <Route
+          path="/user"
+          element={
+            isApprovedUser ? <UserDashboard /> : <Navigate to="/" replace />
+          }
+        />
+
+        {/* Contractor Dashboard - Redirect to appropriate dashboard based on role */}
+        <Route
+          path="/contractor"
+          element={
+            isAdmin ? (
+              <Navigate to="/admin" replace />
+            ) : isApprovedUser ? (
+              <Navigate to="/user" replace />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
+        {/* Redirect any unknown routes to home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </Router>
   );
 }

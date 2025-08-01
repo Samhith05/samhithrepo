@@ -104,24 +104,24 @@ export default function UploadForm() {
   };
 
   return (
-    <div className="max-w-md mx-auto p-4 bg-white rounded shadow-md mb-4">
-      <h2 className="text-2xl font-semibold mb-4">Report an Issue</h2>
+    <div className="bg-white border rounded p-4">
+      <h2 className="text-xl font-semibold mb-4">Report an Issue</h2>
 
       {/* Authentication Status */}
       {!user ? (
-        <div className="mb-4 p-3 bg-yellow-100 border border-yellow-300 rounded">
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
           <p className="text-sm text-yellow-800 mb-2">
             Please log in to submit an issue.
           </p>
           <button
             onClick={login}
-            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
           >
             Sign in with Google
           </button>
         </div>
       ) : !isApprovedUser ? (
-        <div className="mb-4 p-3 bg-orange-100 border border-orange-300 rounded">
+        <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded">
           <p className="text-sm text-orange-800">
             Your account is pending approval. You cannot submit issues until
             approved by an admin.
@@ -131,7 +131,7 @@ export default function UploadForm() {
           </p>
         </div>
       ) : (
-        <div className="mb-4 p-3 bg-green-100 border border-green-300 rounded">
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded">
           <p className="text-sm text-green-800">
             Logged in as: {user.displayName || user.email}
           </p>
@@ -166,7 +166,7 @@ export default function UploadForm() {
       {/* Submit Button */}
       <button
         onClick={handleSubmit}
-        className={`w-full px-4 py-2 ${
+        className={`w-full px-4 py-2 rounded ${
           user && isApprovedUser
             ? "bg-blue-600 text-white hover:bg-blue-700"
             : "bg-gray-400 text-gray-700 cursor-not-allowed"

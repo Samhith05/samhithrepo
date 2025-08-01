@@ -25,6 +25,27 @@ const technicians = [
   },
   {
     id: 4,
+    name: "Robert Davis",
+    specialty: "Heating, Ventilation, and Air Conditioning",
+    available: true,
+    contact: "robert@company.com",
+  },
+  {
+    id: 5,
+    name: "Emily Chen",
+    specialty: "Civil Structures",
+    available: true,
+    contact: "emily@company.com",
+  },
+  {
+    id: 6,
+    name: "Carlos Martinez",
+    specialty: "Common Area Maintenance/Housekeeping",
+    available: true,
+    contact: "carlos@company.com",
+  },
+  {
+    id: 7,
     name: "Lisa Brown",
     specialty: "General",
     available: true,
@@ -35,12 +56,45 @@ const technicians = [
 // 🎯 Auto-assign technician based on issue category
 export default function assignTechnician(category) {
   try {
+    // Normalize category for better matching
+    const normalizedCategory = category.toLowerCase().trim();
+
     // Find available technician with matching specialty
-    let assignedTech = technicians.find(
-      (tech) =>
-        tech.specialty.toLowerCase() === category.toLowerCase() &&
+    let assignedTech = technicians.find((tech) => {
+      const techSpecialty = tech.specialty.toLowerCase();
+
+      // Direct match
+      if (techSpecialty === normalizedCategory && tech.available) {
+        return true;
+      }
+
+      // Handle HVAC variations
+      if (
+        (normalizedCategory.includes("hvac") ||
+          normalizedCategory.includes("heating") ||
+          normalizedCategory.includes("ventilation") ||
+          normalizedCategory.includes("air conditioning")) &&
+        (techSpecialty.includes("hvac") ||
+          techSpecialty.includes(
+            "heating, ventilation, and air conditioning"
+          )) &&
         tech.available
-    );
+      ) {
+        return true;
+      }
+
+      // Handle housekeeping variations
+      if (
+        (normalizedCategory.includes("housekeeping") ||
+          normalizedCategory.includes("common area")) &&
+        techSpecialty.includes("common area maintenance/housekeeping") &&
+        tech.available
+      ) {
+        return true;
+      }
+
+      return false;
+    });
 
     // If no specialist available, assign general technician
     if (!assignedTech) {

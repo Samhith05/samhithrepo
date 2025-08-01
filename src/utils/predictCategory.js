@@ -3,7 +3,10 @@
 import * as tmImage from "@teachablemachine/image";
 
 // 🔗 Your Teachable Machine model URL (replace with your own)
-const modelURL = "https://teachablemachine.withgoogle.com/models/aBot4tINb/"; // ← Replace this
+// IMPORTANT: Update this URL to your new 5-category model that includes:
+// 1. Plumbing, 2. Electrical, 3. Civil Structures,
+// 4. Common Area Maintenance/Housekeeping, 5. Heating, Ventilation, and Air Conditioning
+const modelURL = "https://teachablemachine.withgoogle.com/models/jkm8RlkVB/"; // ← Updated with new 5-category model URL
 
 let model; // cache model after first load
 
@@ -18,6 +21,12 @@ async function loadModel() {
 }
 
 // 🧠 Predict category from uploaded image
+// Expected categories from the updated model:
+// - Plumbing
+// - Electrical
+// - Civil Structures
+// - Common Area Maintenance/Housekeeping
+// - Heating, Ventilation, and Air Conditioning
 export default async function predictCategory(file) {
   try {
     await loadModel(); // ensure model is loaded
