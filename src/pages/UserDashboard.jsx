@@ -40,17 +40,20 @@ export default function UserDashboard() {
   }, [user?.email]);
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 parallax-bg">
       {/* Header */}
-      <div className="bg-white shadow border-b">
+      <div className="bg-white shadow border-b premium-card" style={{borderRadius: '0', marginBottom: '0'}}>
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div className="flex items-center gap-3">
-              <h1 className="text-xl md:text-2xl font-bold text-gray-800">
-                🛠️ AI Maintenance System
+              <div className="floating-element">
+                <span className="text-3xl">🏠</span>
+              </div>
+              <h1 className="text-xl md:text-2xl font-bold gradient-text-premium">
+                AI Maintenance System
               </h1>
-              <span className="text-xs md:text-sm bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 px-2 py-1 rounded-full font-medium border border-blue-300">
-                User Dashboard
+              <span className="status-badge bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 border border-blue-300">
+                User Portal
               </span>
             </div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
@@ -83,11 +86,11 @@ export default function UserDashboard() {
 
           {/* Issues List Section */}
           <div className="order-1 lg:order-2">
-            <div className="bg-white rounded-lg shadow-md">
+            <div className="premium-card hover-lift">
               <div className="p-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                <h2 className="text-lg font-semibold gradient-text-premium flex items-center gap-2">
                   📋 Your Issues
-                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                  <span className="status-badge bg-gray-100 text-gray-600">
                     Track Status
                   </span>
                 </h2>

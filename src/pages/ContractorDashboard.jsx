@@ -106,20 +106,25 @@ export default function ContractorDashboard() {
   const resolvedIssues = issues.filter((issue) => issue.status === "Resolved");
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 parallax-bg">
       {/* Header */}
-      <div className="bg-white shadow border-b">
+      <div className="bg-white shadow border-b premium-card" style={{borderRadius: '0', marginBottom: '0'}}>
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-              <h1 className="text-xl md:text-2xl font-bold text-gray-800">
-                👷 Contractor Dashboard
-              </h1>
+              <div className="flex items-center gap-3">
+                <div className="floating-element">
+                  <span className="text-3xl">👷</span>
+                </div>
+                <h1 className="text-xl md:text-2xl font-bold gradient-text-premium">
+                  Contractor Hub
+                </h1>
+              </div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="bg-gradient-to-r from-green-100 to-green-200 text-green-700 px-3 py-1 rounded-full text-xs md:text-sm font-medium border border-green-300">
+                <span className="status-badge active bg-gradient-to-r from-green-100 to-green-200 text-green-700 border border-green-300">
                   {contractorCategory}
                 </span>
-                <span className="bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 px-2 py-1 rounded-full text-xs font-medium border border-blue-300">
+                <span className="status-badge bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 border border-blue-300">
                   Contractor
                 </span>
               </div>

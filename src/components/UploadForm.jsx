@@ -130,13 +130,13 @@ export default function UploadForm() {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 transition-all duration-200 hover:shadow-md">
+    <div className="premium-card hover-lift">
       <div className="flex items-center gap-3 mb-6">
-        <div className="bg-blue-100 p-2 rounded-lg">
-          <span className="text-2xl">🛠️</span>
+        <div className="bg-gradient-to-br from-blue-100 to-purple-100 p-3 rounded-xl floating-element">
+          <span className="text-3xl">🛠️</span>
         </div>
         <div>
-          <h2 className="text-xl font-semibold text-gray-800">Report an Issue</h2>
+          <h2 className="text-2xl font-bold gradient-text-premium">Report an Issue</h2>
           <p className="text-sm text-gray-600">Submit maintenance requests with AI-powered categorization</p>
         </div>
       </div>

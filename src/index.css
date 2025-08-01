@@ -1,5 +1,6 @@
 /* Custom CSS to replace Tailwind classes */
 @import './styles/animations.css';
+@import './styles/premium-theme.css';
 
 /* Reset and base styles */
 * {

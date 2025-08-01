@@ -85,44 +85,48 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {/* Dashboard Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 rounded-lg shadow-md transform transition-all duration-200 hover:scale-105">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+          <div className="premium-card hover-lift neon-blue floating-element">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-100 text-sm">Total Issues</p>
-                <p className="text-2xl font-bold">{dashboardStats.total}</p>
+                <p className="text-blue-600 text-sm font-semibold mb-1">Total Issues</p>
+                <p className="text-3xl font-bold gradient-text-premium">{dashboardStats.total}</p>
+                <p className="text-xs text-blue-500 mt-1">📊 System Overview</p>
               </div>
-              <div className="text-3xl opacity-80">📋</div>
+              <div className="text-4xl opacity-80">📋</div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white p-4 rounded-lg shadow-md transform transition-all duration-200 hover:scale-105">
+          <div className="premium-card hover-lift neon-orange" style={{animationDelay: '0.1s'}}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-orange-100 text-sm">Open</p>
-                <p className="text-2xl font-bold">{dashboardStats.open}</p>
+                <p className="text-orange-600 text-sm font-semibold mb-1">Open Issues</p>
+                <p className="text-3xl font-bold text-orange-700">{dashboardStats.open}</p>
+                <p className="text-xs text-orange-500 mt-1">🆕 Needs Attention</p>
               </div>
-              <div className="text-3xl opacity-80">🆕</div>
+              <div className="text-4xl opacity-80">🚨</div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white p-4 rounded-lg shadow-md transform transition-all duration-200 hover:scale-105">
+          <div className="premium-card hover-lift" style={{animationDelay: '0.2s'}}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-yellow-100 text-sm">In Progress</p>
-                <p className="text-2xl font-bold">{dashboardStats.inProgress}</p>
+                <p className="text-yellow-600 text-sm font-semibold mb-1">In Progress</p>
+                <p className="text-3xl font-bold text-yellow-700">{dashboardStats.inProgress}</p>
+                <p className="text-xs text-yellow-500 mt-1">⚡ Active Work</p>
               </div>
-              <div className="text-3xl opacity-80">⚡</div>
+              <div className="text-4xl opacity-80">🔧</div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-green-500 to-green-600 text-white p-4 rounded-lg shadow-md transform transition-all duration-200 hover:scale-105">
+          <div className="premium-card hover-lift neon-green floating-element" style={{animationDelay: '0.3s'}}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm">Resolved</p>
-                <p className="text-2xl font-bold">{dashboardStats.resolved}</p>
+                <p className="text-green-600 text-sm font-semibold mb-1">Resolved</p>
+                <p className="text-3xl font-bold text-green-700">{dashboardStats.resolved}</p>
+                <p className="text-xs text-green-500 mt-1">✅ Completed</p>
               </div>
-              <div className="text-3xl opacity-80">✅</div>
+              <div className="text-4xl opacity-80">🎉</div>
             </div>
           </div>
         </div>
