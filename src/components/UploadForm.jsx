@@ -73,7 +73,7 @@ export default function UploadForm() {
           "Teachable Machine prediction failed, trying Gemini AI:",
           predictionError
         );
-        
+
         // Fallback to Gemini AI with description
         try {
           const { analyzeIssueDescription } = await import("../api/gemini");
@@ -193,8 +193,8 @@ export default function UploadForm() {
       <button
         onClick={handleSubmit}
         className={`w-full px-4 py-2 rounded ${user && isApprovedUser && !isSubmitting
-            ? "bg-blue-600 text-white hover:bg-blue-700"
-            : "bg-gray-400 text-gray-700 cursor-not-allowed"
+          ? "bg-blue-600 text-white hover:bg-blue-700"
+          : "bg-gray-400 text-gray-700 cursor-not-allowed"
           }`}
         disabled={!user || !isApprovedUser || isSubmitting}
       >

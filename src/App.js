@@ -38,7 +38,7 @@ function App() {
   }
 
   // Show login page if user is not authenticated OR if they are new and need to choose a role
-  if (!user || userStatus === "new") {
+  if (!user || userStatus === "new" || userStatus === "unauthenticated") {
     return (
       <Router>
         <Routes>

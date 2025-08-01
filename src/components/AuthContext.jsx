@@ -32,18 +32,24 @@ export function AuthProvider({ children }) {
   const [userStatus, setUserStatus] = useState("loading"); // "loading", "approved", "pending", "denied", "new"
   const [userRole, setUserRole] = useState(null); // "user", "contractor", "admin"
   const [contractorCategory, setContractorCategory] = useState(null);
+  const [attemptedRole, setAttemptedRole] = useState(null);
   const [roleError, setRoleError] = useState(null);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log("Auth state changed:", firebaseUser?.email || "No user");
+
       if (firebaseUser) {
         setUser(firebaseUser);
         await checkUserStatus(firebaseUser);
       } else {
+        // No authenticated user - reset all states
+        console.log("No authenticated user, resetting states");
         setUser(null);
-        setUserStatus("loading");
+        setUserStatus("unauthenticated"); // Set to unauthenticated instead of loading
         setUserRole(null);
         setContractorCategory(null);
+        setAttemptedRole(null);
         setRoleError(null);
       }
     });
