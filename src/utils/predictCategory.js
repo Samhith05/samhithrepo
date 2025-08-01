@@ -40,12 +40,24 @@ export default async function predictCategory(file) {
         try {
           const predictions = await model.predict(img);
 
-          // Pick the label with highest probability
-          const best = predictions.reduce((a, b) =>
-            a.probability > b.probability ? a : b
-          );
+          // 🐛 Debug: Log all predictions to see what the model is returning
+          console.log("🤖 AI Model Predictions:", predictions);
 
-          resolve(best.className); // e.g., "Plumbing"
+          // Sort predictions by probability (highest first)
+          const sortedPredictions = predictions.sort((a, b) => b.probability - a.probability);
+          console.log("📊 Sorted predictions:", sortedPredictions);
+
+          // Pick the label with highest probability
+          const best = sortedPredictions[0];
+          console.log("🎯 Best prediction:", best);
+          console.log("🏷️ Predicted category:", best.className);
+          console.log("📈 Confidence:", (best.probability * 100).toFixed(2) + "%");
+
+          // 🔧 Map the predicted category to your 5 expected categories
+          const mappedCategory = mapToExpectedCategory(best.className);
+          console.log("🗂️ Mapped category:", mappedCategory);
+
+          resolve(mappedCategory);
         } catch (error) {
           console.error("Error during prediction:", error);
           reject(error);
@@ -61,4 +73,38 @@ export default async function predictCategory(file) {
     console.error("Error loading model:", error);
     throw error;
   }
+}
+
+// 🗂️ Map predicted categories to your expected 5 categories
+function mapToExpectedCategory(predictedCategory) {
+  const category = predictedCategory.toLowerCase().trim();
+
+  // Your 5 expected categories
+  const validCategories = [
+    "Plumbing",
+    "Electrical",
+    "HVAC",
+    "Common Area Maintenance/Housekeeping",
+    "Civil Structures"
+  ];
+
+  // Direct match (case insensitive)
+  const directMatch = validCategories.find(
+    valid => valid.toLowerCase() === category
+  );
+  if (directMatch) return directMatch;
+
+  // Pattern matching for variations
+  if (category.includes("plumb")) return "Plumbing";
+  if (category.includes("electric") || category.includes("wiring")) return "Electrical";
+  if (category.includes("hvac") || category.includes("heating") ||
+    category.includes("ventilation") || category.includes("air conditioning")) return "HVAC";
+  if (category.includes("housekeep") || category.includes("common area") ||
+    category.includes("cleaning")) return "Common Area Maintenance/Housekeeping";
+  if (category.includes("civil") || category.includes("structural") ||
+    category.includes("building")) return "Civil Structures";
+
+  // Default fallback
+  console.warn(`⚠️ Unknown category "${predictedCategory}", defaulting to Civil Structures`);
+  return "Civil Structures";
 }

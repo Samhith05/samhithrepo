@@ -18,6 +18,8 @@ export default function ContractorDashboard() {
   const [loading, setLoading] = useState(true);
   const { user, logout, contractorCategory } = useAuth();
 
+  console.log("🚀 ContractorDashboard - contractorCategory:", contractorCategory);
+
   useEffect(() => {
     if (!contractorCategory) {
       console.log("No contractor category found");
@@ -25,7 +27,17 @@ export default function ContractorDashboard() {
       return;
     }
 
-    console.log("Querying for issues with category:", contractorCategory);
+    console.log("🔍 Contractor Dashboard: Querying for issues with category:", contractorCategory);
+
+    // First, let's see ALL issues to debug category matching
+    const allIssuesQuery = collection(db, "issues");
+    const unsubAll = onSnapshot(allIssuesQuery, (snapshot) => {
+      console.log("🔍 ALL ISSUES DEBUG:");
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        console.log(`Issue ${doc.id}: category="${data.category}" | contractorCategory="${contractorCategory}" | match=${data.category === contractorCategory}`);
+      });
+    });
 
     // Query for issues that match the contractor's category
     const q = query(
@@ -35,7 +47,7 @@ export default function ContractorDashboard() {
 
     const unsub = onSnapshot(q, (snapshot) => {
       console.log(
-        "Firestore snapshot received, docs count:",
+        "🔍 Firestore snapshot received for contractor category, docs count:",
         snapshot.docs.length
       );
       const data = snapshot.docs.map((doc) => ({
@@ -50,12 +62,15 @@ export default function ContractorDashboard() {
         return dateB - dateA;
       });
 
-      console.log("Issues data:", data);
+      console.log("🔍 Filtered issues for contractor:", data);
       setIssues(data);
       setLoading(false);
     });
 
-    return () => unsub();
+    return () => {
+      unsub();
+      unsubAll();
+    };
   }, [contractorCategory]);
 
   const updateStatus = async (id, newStatus) => {
@@ -269,9 +284,8 @@ function IssueCard({
 }) {
   return (
     <div
-      className={`border rounded-lg p-4 ${
-        isResolved ? "bg-green-50" : "bg-white"
-      } hover:shadow-md transition-shadow`}
+      className={`border rounded-lg p-4 ${isResolved ? "bg-green-50" : "bg-white"
+        } hover:shadow-md transition-shadow`}
     >
       <div className="flex gap-4 mb-3">
         <img

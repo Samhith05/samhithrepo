@@ -29,10 +29,9 @@ export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [userStatus, setUserStatus] = useState("loading"); // "loading", "approved", "pending", "denied"
+  const [userStatus, setUserStatus] = useState("loading"); // "loading", "approved", "pending", "denied", "new"
   const [userRole, setUserRole] = useState(null); // "user", "contractor", "admin"
   const [contractorCategory, setContractorCategory] = useState(null);
-  const [attemptedRole, setAttemptedRole] = useState(null);
   const [roleError, setRoleError] = useState(null);
 
   useEffect(() => {
@@ -45,7 +44,6 @@ export function AuthProvider({ children }) {
         setUserStatus("loading");
         setUserRole(null);
         setContractorCategory(null);
-        setAttemptedRole(null);
         setRoleError(null);
       }
     });
@@ -69,7 +67,9 @@ export function AuthProvider({ children }) {
         if (userData.status === "approved") {
           setUserStatus("approved");
           setUserRole(userData.role || "user");
-          setContractorCategory(userData.contractorCategory || null);
+          const category = userData.contractorCategory || null;
+          console.log("🔍 AuthContext: Setting approved user contractor category:", category, "from userData:", userData);
+          setContractorCategory(category);
         } else if (userData.status === "denied") {
           setUserStatus("denied");
           setUserRole(null);
@@ -86,13 +86,15 @@ export function AuthProvider({ children }) {
           if (contractorData.status === "approved") {
             setUserStatus("approved");
             setUserRole("contractor");
-            setContractorCategory(contractorData.category);
+            const category = contractorData.category || contractorData.contractorCategory;
+            console.log("🔍 AuthContext: Setting contractor category:", category, "from data:", contractorData);
+            setContractorCategory(category);
 
             // Move to approved users collection
             await setDoc(doc(db, "approvedUsers", firebaseUser.uid), {
               ...contractorData,
               role: "contractor",
-              contractorCategory: contractorData.category,
+              contractorCategory: category,
               status: "approved",
             });
           } else if (contractorData.status === "denied") {
@@ -102,7 +104,9 @@ export function AuthProvider({ children }) {
           } else {
             setUserStatus("pending");
             setUserRole("contractor");
-            setContractorCategory(contractorData.category);
+            const category = contractorData.category || contractorData.contractorCategory;
+            console.log("🔍 AuthContext: Setting pending contractor category:", category, "from data:", contractorData);
+            setContractorCategory(category);
           }
           return;
         }
@@ -118,8 +122,8 @@ export function AuthProvider({ children }) {
           setUserRole(pendingData.role || "user");
           setContractorCategory(pendingData.contractorCategory || null);
         } else {
-          // No existing requests - status will be set when they choose a role
-          setUserStatus("loading");
+          // No existing requests - this is a new user, set status to indicate they need to choose a role
+          setUserStatus("new");
           setUserRole(null);
           setContractorCategory(null);
         }
@@ -210,19 +214,32 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const login = async (role = null, contractorCategory = null) => {
+  const login = async (role = null, contractorCategory = null, alreadyAuthenticated = false) => {
     console.log(
-      "Login called with role:",
+      "🔍 AuthContext Login called with role:",
       role,
-      "category:",
-      contractorCategory
+      "contractorCategory:",
+      contractorCategory,
+      "alreadyAuthenticated:",
+      alreadyAuthenticated
     );
-    setAttemptedRole(role);
     setRoleError(null);
 
     try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
+      let result;
+
+      if (alreadyAuthenticated) {
+        // User is already authenticated, just get the current user
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+          throw new Error("No authenticated user found");
+        }
+        result = { user: currentUser };
+      } else {
+        // Normal authentication flow
+        const provider = new GoogleAuthProvider();
+        result = await signInWithPopup(auth, provider);
+      }
 
       // Check role access immediately after successful login
       if (role && result.user) {
@@ -254,7 +271,6 @@ export function AuthProvider({ children }) {
       return result;
     } catch (error) {
       console.error("Login failed:", error);
-      setAttemptedRole(null);
       throw error;
     }
   };
@@ -295,15 +311,11 @@ export function AuthProvider({ children }) {
     console.log("Access granted or no error");
     setRoleError(null);
 
-    // Clear attempted role after checking
-    console.log("Clearing attempted role");
-    setAttemptedRole(null);
     return true;
   };
 
   const logout = () => {
     setRoleError(null);
-    setAttemptedRole(null);
     setUserRole(null);
     setContractorCategory(null);
     return signOut(auth);

@@ -9,13 +9,10 @@ import { doc, getDoc } from "firebase/firestore";
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const [attemptedRole, setAttemptedRole] = useState(null);
   const [showContractorSelector, setShowContractorSelector] = useState(false);
   const [isCheckingContractor, setIsCheckingContractor] = useState(false);
 
   const handleRoleLogin = async (role) => {
-    setAttemptedRole(role);
-
     if (role === "contractor") {
       setIsCheckingContractor(true);
 
@@ -28,9 +25,9 @@ export default function LoginPage() {
         const existingContractor = await checkExistingContractor(result.user);
 
         if (existingContractor) {
-          // User is an existing contractor, proceed with normal login
-          console.log("Existing contractor found, proceeding with login");
-          await login("contractor");
+          // User is an existing contractor, just let AuthContext handle the rest
+          console.log("Existing contractor found, waiting for auth state update");
+          // Don't call login again, the auth state change will handle it
         } else {
           // New contractor, show category selector
           console.log("New contractor, showing category selector");
@@ -38,7 +35,12 @@ export default function LoginPage() {
         }
       } catch (error) {
         console.error("Contractor check failed:", error);
-        setAttemptedRole(null);
+        // Sign out if there was an error to clear the auth state
+        try {
+          await auth.signOut();
+        } catch (signOutError) {
+          console.error("Error signing out:", signOutError);
+        }
       } finally {
         setIsCheckingContractor(false);
       }
@@ -49,7 +51,6 @@ export default function LoginPage() {
       await login(role);
     } catch (error) {
       console.error("Login failed:", error);
-      setAttemptedRole(null);
     }
   };
 
@@ -88,18 +89,29 @@ export default function LoginPage() {
 
   const handleContractorCategorySelect = async (categoryName, categoryId) => {
     try {
-      await login("contractor", categoryName);
+      // Call login with the category but indicate we're already authenticated
+      await login("contractor", categoryName, true); // true flag indicates already authenticated
       setShowContractorSelector(false);
     } catch (error) {
       console.error("Contractor login failed:", error);
-      setAttemptedRole(null);
       setShowContractorSelector(false);
+      // Sign out on error
+      try {
+        await auth.signOut();
+      } catch (signOutError) {
+        console.error("Error signing out:", signOutError);
+      }
     }
   };
 
-  const handleContractorCancel = () => {
+  const handleContractorCancel = async () => {
     setShowContractorSelector(false);
-    setAttemptedRole(null);
+    // Sign out the user since they cancelled the registration
+    try {
+      await auth.signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   if (showContractorSelector) {
@@ -160,11 +172,10 @@ export default function LoginPage() {
           <button
             onClick={() => handleRoleLogin("contractor")}
             disabled={isCheckingContractor}
-            className={`w-full font-medium py-3 px-4 rounded transition-colors flex items-center justify-center gap-3 ${
-              isCheckingContractor
-                ? "bg-gray-400 cursor-not-allowed text-white"
-                : "bg-green-600 hover:bg-green-700 text-white"
-            }`}
+            className={`w-full font-medium py-3 px-4 rounded transition-colors flex items-center justify-center gap-3 ${isCheckingContractor
+              ? "bg-gray-400 cursor-not-allowed text-white"
+              : "bg-green-600 hover:bg-green-700 text-white"
+              }`}
           >
             <span className="text-xl">👷</span>
             <div className="text-left">

@@ -16,10 +16,17 @@ export default function UploadForm() {
   const [desc, setDesc] = useState("");
   const [status, setStatus] = useState("");
   const [prediction, setPrediction] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false); // Add submission state
 
   const { user, login, isApprovedUser } = useAuth();
 
   const handleSubmit = async () => {
+    // Prevent double submissions
+    if (isSubmitting) {
+      console.log("Submit already in progress, ignoring");
+      return;
+    }
+
     // Check if user is authenticated and approved
     if (!user) {
       alert("Please log in first to submit an issue.");
@@ -39,7 +46,9 @@ export default function UploadForm() {
     }
 
     try {
+      setIsSubmitting(true); // Set submitting state
       setStatus("Uploading to Cloudinary...");
+      console.log("Starting submission process...");
 
       // 🖼 Upload image to Cloudinary
       const formData = new FormData();
@@ -71,7 +80,9 @@ export default function UploadForm() {
       const technician = assignTechnician(category);
 
       setStatus("Saving to Firestore...");
-      await addDoc(collection(db, "issues"), {
+      console.log("About to save to Firestore with category:", category);
+
+      const issueData = {
         userEmail: user.email || "anonymous@example.com",
         userName: user.displayName || user.email || "Anonymous User",
         imageUrl,
@@ -81,7 +92,11 @@ export default function UploadForm() {
         contact: technician.contact,
         status: "Open",
         createdAt: Timestamp.now(),
-      });
+      };
+
+      console.log("Issue data to be saved:", issueData);
+      await addDoc(collection(db, "issues"), issueData);
+      console.log("Successfully saved to Firestore");
 
       setStatus("Submitted ✅");
       setFile(null);
@@ -100,6 +115,8 @@ export default function UploadForm() {
       } else {
         setStatus(`Error submitting: ${err.message || "Unknown error"}`);
       }
+    } finally {
+      setIsSubmitting(false); // Reset submitting state
     }
   };
 
@@ -166,14 +183,13 @@ export default function UploadForm() {
       {/* Submit Button */}
       <button
         onClick={handleSubmit}
-        className={`w-full px-4 py-2 rounded ${
-          user && isApprovedUser
+        className={`w-full px-4 py-2 rounded ${user && isApprovedUser && !isSubmitting
             ? "bg-blue-600 text-white hover:bg-blue-700"
             : "bg-gray-400 text-gray-700 cursor-not-allowed"
-        }`}
-        disabled={!user || !isApprovedUser}
+          }`}
+        disabled={!user || !isApprovedUser || isSubmitting}
       >
-        Submit Issue
+        {isSubmitting ? "Submitting..." : "Submit Issue"}
       </button>
 
       {/* Status */}

@@ -31,8 +31,8 @@ function App() {
   console.log("App render - isContractor:", isContractor);
   console.log("App render - userStatus:", userStatus);
 
-  // Show login page if user is not authenticated
-  if (!user) {
+  // Show login page if user is not authenticated OR if they are new and need to choose a role
+  if (!user || userStatus === "new") {
     return (
       <Router>
         <Routes>
