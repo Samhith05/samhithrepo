@@ -30,6 +30,8 @@ export const useAuth = () => useContext(AuthContext);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [userStatus, setUserStatus] = useState("loading"); // "loading", "approved", "pending", "denied"
+  const [userRole, setUserRole] = useState(null); // "user", "contractor", "admin"
+  const [contractorCategory, setContractorCategory] = useState(null);
   const [attemptedRole, setAttemptedRole] = useState(null);
   const [roleError, setRoleError] = useState(null);
 
@@ -38,23 +40,24 @@ export function AuthProvider({ children }) {
       if (firebaseUser) {
         setUser(firebaseUser);
         await checkUserStatus(firebaseUser);
-        // Check role access after user is authenticated
-        checkRoleAccess(firebaseUser);
       } else {
         setUser(null);
         setUserStatus("loading");
+        setUserRole(null);
+        setContractorCategory(null);
         setAttemptedRole(null);
         setRoleError(null);
       }
     });
     return () => unsub();
-  }, [attemptedRole]);
+  }, []);
 
   const checkUserStatus = async (firebaseUser) => {
     try {
       // Check if user is an admin first - admins get automatic approval
       if (ADMIN_EMAILS.includes(firebaseUser.email)) {
         setUserStatus("approved");
+        setUserRole("admin");
         return;
       }
 
@@ -65,21 +68,60 @@ export function AuthProvider({ children }) {
         const userData = userDoc.data();
         if (userData.status === "approved") {
           setUserStatus("approved");
+          setUserRole(userData.role || "user");
+          setContractorCategory(userData.contractorCategory || null);
         } else if (userData.status === "denied") {
           setUserStatus("denied");
+          setUserRole(null);
+          setContractorCategory(null);
         }
       } else {
-        // User not in approved users, check if already has pending request
+        // Check if user is in contractor approvals
+        const contractorDoc = await getDoc(
+          doc(db, "contractorApprovals", firebaseUser.uid)
+        );
+
+        if (contractorDoc.exists()) {
+          const contractorData = contractorDoc.data();
+          if (contractorData.status === "approved") {
+            setUserStatus("approved");
+            setUserRole("contractor");
+            setContractorCategory(contractorData.category);
+
+            // Move to approved users collection
+            await setDoc(doc(db, "approvedUsers", firebaseUser.uid), {
+              ...contractorData,
+              role: "contractor",
+              contractorCategory: contractorData.category,
+              status: "approved",
+            });
+          } else if (contractorData.status === "denied") {
+            setUserStatus("denied");
+            setUserRole(null);
+            setContractorCategory(null);
+          } else {
+            setUserStatus("pending");
+            setUserRole("contractor");
+            setContractorCategory(contractorData.category);
+          }
+          return;
+        }
+
+        // User not in approved users or contractor approvals, check if already has pending request
         const pendingDoc = await getDoc(
           doc(db, "pendingApprovals", firebaseUser.uid)
         );
 
         if (pendingDoc.exists()) {
+          const pendingData = pendingDoc.data();
           setUserStatus("pending");
+          setUserRole(pendingData.role || "user");
+          setContractorCategory(pendingData.contractorCategory || null);
         } else {
-          // Create new approval request
-          await createApprovalRequest(firebaseUser);
-          setUserStatus("pending");
+          // No existing requests - status will be set when they choose a role
+          setUserStatus("loading");
+          setUserRole(null);
+          setContractorCategory(null);
         }
       }
     } catch (error) {
@@ -88,67 +130,140 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const checkRoleAccess = (firebaseUser) => {
-    if (!attemptedRole) return;
-
-    const isUserAdmin = ADMIN_EMAILS.includes(firebaseUser.email);
-
-    if (attemptedRole === "admin" && !isUserAdmin) {
-      setRoleError({
-        type: "admin_access_denied",
-        message:
-          "Access Denied: You do not have administrator privileges. Please contact an administrator if you believe this is an error.",
-      });
-    } else {
-      // Clear any previous errors if access is valid
-      setRoleError(null);
-    }
-
-    // Clear attempted role after checking
-    setAttemptedRole(null);
-  };
-
-  const createApprovalRequest = async (firebaseUser) => {
+  const createApprovalRequest = async (
+    firebaseUser,
+    role = "user",
+    contractorCategory = null
+  ) => {
     try {
-      // Add to pending approvals collection
-      await setDoc(doc(db, "pendingApprovals", firebaseUser.uid), {
+      const requestData = {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
         displayName: firebaseUser.displayName || "",
         photoURL: firebaseUser.photoURL || "",
         requestedAt: Timestamp.now(),
         status: "waiting_approval",
-      });
+        role: role,
+        contractorCategory: contractorCategory,
+      };
 
-      // Also add to approval requests for admin notifications
-      await addDoc(collection(db, "approvalRequests"), {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        displayName: firebaseUser.displayName || "",
-        photoURL: firebaseUser.photoURL || "",
-        requestedAt: Timestamp.now(),
-        status: "waiting_approval",
-      });
+      if (role === "contractor") {
+        // Add to contractor approvals collection
+        await setDoc(
+          doc(db, "contractorApprovals", firebaseUser.uid),
+          requestData
+        );
+
+        // Also add to approval requests for admin notifications
+        await addDoc(collection(db, "contractorRequests"), requestData);
+      } else {
+        // Add to pending approvals collection
+        await setDoc(
+          doc(db, "pendingApprovals", firebaseUser.uid),
+          requestData
+        );
+
+        // Also add to approval requests for admin notifications
+        await addDoc(collection(db, "approvalRequests"), requestData);
+      }
     } catch (error) {
       console.error("Error creating approval request:", error);
     }
   };
 
-  const login = (role = null) => {
+  const login = async (role = null, contractorCategory = null) => {
+    console.log(
+      "Login called with role:",
+      role,
+      "category:",
+      contractorCategory
+    );
     setAttemptedRole(role);
     setRoleError(null);
-    const provider = new GoogleAuthProvider();
-    return signInWithPopup(auth, provider);
+
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+
+      // Check role access immediately after successful login
+      if (role && result.user) {
+        console.log("Checking role access after login");
+        const isRoleValid = await checkRoleAccessSync(
+          result.user,
+          role,
+          contractorCategory
+        );
+
+        if (isRoleValid && (role === "user" || role === "contractor")) {
+          // Create approval request if needed
+          await createApprovalRequest(result.user, role, contractorCategory);
+          setUserStatus("pending");
+          setUserRole(role);
+          setContractorCategory(contractorCategory);
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Login failed:", error);
+      setAttemptedRole(null);
+      throw error;
+    }
+  };
+
+  const checkRoleAccessSync = (
+    firebaseUser,
+    role,
+    contractorCategory = null
+  ) => {
+    console.log("checkRoleAccessSync called with:", {
+      role,
+      contractorCategory,
+      userEmail: firebaseUser.email,
+      isUserAdmin: ADMIN_EMAILS.includes(firebaseUser.email),
+    });
+
+    const isUserAdmin = ADMIN_EMAILS.includes(firebaseUser.email);
+
+    if (role === "admin" && !isUserAdmin) {
+      console.log("Setting role error for non-admin trying admin access");
+      setRoleError({
+        type: "admin_access_denied",
+        message:
+          "Access Denied: You do not have administrator privileges. Please contact an administrator if you believe this is an error.",
+      });
+      return false;
+    }
+
+    if (role === "contractor" && !contractorCategory) {
+      console.log("Setting role error for contractor without category");
+      setRoleError({
+        type: "contractor_category_required",
+        message: "Please select a contractor category to continue.",
+      });
+      return false;
+    }
+
+    console.log("Access granted or no error");
+    setRoleError(null);
+
+    // Clear attempted role after checking
+    console.log("Clearing attempted role");
+    setAttemptedRole(null);
+    return true;
   };
 
   const logout = () => {
     setRoleError(null);
     setAttemptedRole(null);
+    setUserRole(null);
+    setContractorCategory(null);
     return signOut(auth);
   };
 
   const isAdmin = user && ADMIN_EMAILS.includes(user.email);
   const isApprovedUser = userStatus === "approved" || isAdmin;
+  const isContractor = userRole === "contractor" && isApprovedUser;
   const isPendingApproval = userStatus === "pending" && !isAdmin;
   const isDeniedUser = userStatus === "denied" && !isAdmin;
 
@@ -160,9 +275,12 @@ export function AuthProvider({ children }) {
         logout,
         isAdmin,
         isApprovedUser,
+        isContractor,
         isPendingApproval,
         isDeniedUser,
         userStatus,
+        userRole,
+        contractorCategory,
         roleError,
         clearRoleError: () => setRoleError(null),
       }}

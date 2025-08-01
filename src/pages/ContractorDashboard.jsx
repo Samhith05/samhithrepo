@@ -11,29 +11,26 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { useAuth } from "../components/AuthContext";
-import { Link } from "react-router-dom";
+import StatusProgress from "../components/StatusProgress";
 
 export default function ContractorDashboard() {
   const [issues, setIssues] = useState([]);
-  const { user, logout, isAdmin } = useAuth();
-  const technicianName = user?.displayName || "Unknown";
-
-  console.log("ContractorDashboard - user:", user);
-  console.log("ContractorDashboard - technicianName:", technicianName);
+  const [loading, setLoading] = useState(true);
+  const { user, logout, contractorCategory } = useAuth();
 
   useEffect(() => {
-    console.log("useEffect triggered - technicianName:", technicianName);
-
-    if (!technicianName || technicianName === "Unknown") {
-      console.log("Skipping query - user not loaded or unknown");
+    if (!contractorCategory) {
+      console.log("No contractor category found");
+      setLoading(false);
       return;
     }
 
-    console.log("Querying for issues assigned to:", technicianName);
+    console.log("Querying for issues with category:", contractorCategory);
 
+    // Query for issues that match the contractor's category
     const q = query(
       collection(db, "issues"),
-      where("assignedTo", "==", technicianName)
+      where("category", "==", contractorCategory)
     );
 
     const unsub = onSnapshot(q, (snapshot) => {
@@ -45,102 +42,301 @@ export default function ContractorDashboard() {
         id: doc.id,
         ...doc.data(),
       }));
+
+      // Sort by creation date (newest first)
+      data.sort((a, b) => {
+        const dateA = a.createdAt?.toDate() || new Date(0);
+        const dateB = b.createdAt?.toDate() || new Date(0);
+        return dateB - dateA;
+      });
+
       console.log("Issues data:", data);
       setIssues(data);
+      setLoading(false);
     });
 
     return () => unsub();
-  }, [technicianName]);
+  }, [contractorCategory]);
 
   const updateStatus = async (id, newStatus) => {
-    const ref = doc(db, "issues", id);
-    await updateDoc(ref, { status: newStatus });
+    try {
+      const ref = doc(db, "issues", id);
+      await updateDoc(ref, {
+        status: newStatus,
+        lastUpdated: new Date(),
+        updatedBy: user?.displayName || user?.email || "Contractor",
+      });
+      console.log(`Issue ${id} status updated to ${newStatus}`);
+    } catch (error) {
+      console.error("Error updating status:", error);
+      alert("Failed to update status. Please try again.");
+    }
   };
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Open":
+        return "bg-yellow-100 text-yellow-800";
+      case "Assigned":
+        return "bg-blue-100 text-blue-800";
+      case "Resolved":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const openIssues = issues.filter((issue) => issue.status === "Open");
+  const assignedIssues = issues.filter((issue) => issue.status === "Assigned");
+  const resolvedIssues = issues.filter((issue) => issue.status === "Resolved");
+
   return (
-    <div className="p-6">
-      {/* Header with Navigation */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">👷 Contractor Dashboard</h2>
-        <div className="flex items-center gap-4">
-          {user && (
-            <span className="text-sm text-gray-600">
-              Welcome, {user.displayName || user.email}
-            </span>
-          )}
-          <button
-            onClick={logout}
-            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition duration-200"
-          >
-            Logout
-          </button>
+    <div className="min-h-screen bg-gray-100">
+      {/* Header */}
+      <div className="bg-white shadow border-b">
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-gray-800">
+                👷 Contractor Dashboard
+              </h1>
+              <div className="flex items-center gap-2">
+                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                  {contractorCategory}
+                </span>
+                <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-medium">
+                  Contractor
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              {user && (
+                <span className="text-sm text-gray-600">
+                  Welcome, {user.displayName || user.email}
+                </span>
+              )}
+              <button
+                onClick={logout}
+                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Debug Info */}
-      <div className="mb-4 p-4 bg-yellow-100 border border-yellow-300 rounded">
-        <p>
-          <strong>Debug Info:</strong>
-        </p>
-        <p>
-          User:{" "}
-          {user
-            ? JSON.stringify(user.displayName || user.email)
-            : "Not logged in"}
-        </p>
-        <p>Technician Name: {technicianName}</p>
-        <p>Issues Count: {issues.length}</p>
-      </div>
-
-      {/* Issues Section */}
-      <div className="bg-white border rounded p-4">
-        <h3 className="text-lg font-semibold mb-4">📋 Assigned Issues</h3>
-
-        {issues.length === 0 ? (
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        {loading ? (
           <div className="text-center py-8">
-            <p className="text-gray-500 mb-2">No issues assigned to you.</p>
-            <p className="text-sm text-gray-400">
-              Make sure you're logged in and have issues assigned to "
-              {technicianName}"
+            <p className="text-gray-500">Loading your assigned issues...</p>
+          </div>
+        ) : !contractorCategory ? (
+          <div className="bg-white rounded-lg shadow border p-6 text-center">
+            <div className="text-4xl mb-3">⚠️</div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              No Category Assigned
+            </h3>
+            <p className="text-gray-600">
+              Your contractor category is not set. Please contact an
+              administrator.
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {issues.map((issue) => (
-              <div
-                key={issue.id}
-                className="bg-white border rounded p-4 shadow"
-              >
-                <img
-                  src={issue.imageUrl}
-                  alt="issue"
-                  className="w-32 h-32 object-cover rounded mb-2"
-                />
-                <p>
-                  <strong>Description:</strong> {issue.description}
-                </p>
-                <p>
-                  <strong>Category:</strong> {issue.category}
-                </p>
-                <p>
-                  <strong>Current Status:</strong> {issue.status}
-                </p>
-
-                <div className="mt-2">
-                  <label className="mr-2 font-medium">Update Status:</label>
-                  <select
-                    value={issue.status}
-                    onChange={(e) => updateStatus(issue.id, e.target.value)}
-                    className="border px-2 py-1 rounded"
-                  >
-                    <option value="Assigned">Assigned</option>
-                    <option value="Resolved">Resolved</option>
-                  </select>
+          <>
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="bg-white rounded-lg shadow border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold text-yellow-600">
+                      {openIssues.length}
+                    </p>
+                    <p className="text-sm text-gray-600">Open Issues</p>
+                  </div>
+                  <div className="text-2xl">🚨</div>
                 </div>
               </div>
-            ))}
-          </div>
+
+              <div className="bg-white rounded-lg shadow border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {assignedIssues.length}
+                    </p>
+                    <p className="text-sm text-gray-600">In Progress</p>
+                  </div>
+                  <div className="text-2xl">🔧</div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold text-green-600">
+                      {resolvedIssues.length}
+                    </p>
+                    <p className="text-sm text-gray-600">Completed</p>
+                  </div>
+                  <div className="text-2xl">✅</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Issues List */}
+            <div className="bg-white rounded-lg shadow border">
+              <div className="bg-green-600 px-6 py-4 rounded-t-lg">
+                <h3 className="text-xl font-bold text-white">
+                  📋 Issues in Your Category: {contractorCategory}
+                </h3>
+                <p className="text-green-100 text-sm mt-1">
+                  Manage and update the status of maintenance issues assigned to
+                  your expertise
+                </p>
+              </div>
+
+              <div className="p-6">
+                {issues.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="text-4xl mb-3">📭</div>
+                    <p className="text-gray-600 text-lg mb-2">
+                      No issues in your category yet
+                    </p>
+                    <p className="text-gray-500 text-sm">
+                      Issues related to "{contractorCategory}" will appear here
+                      when reported
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Pending Issues */}
+                    {(openIssues.length > 0 || assignedIssues.length > 0) && (
+                      <div className="mb-6">
+                        <h4 className="text-lg font-semibold text-gray-800 mb-3">
+                          🚧 Active Issues (
+                          {openIssues.length + assignedIssues.length})
+                        </h4>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          {[...openIssues, ...assignedIssues].map((issue) => (
+                            <IssueCard
+                              key={issue.id}
+                              issue={issue}
+                              onStatusUpdate={updateStatus}
+                              getStatusColor={getStatusColor}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Resolved Issues */}
+                    {resolvedIssues.length > 0 && (
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-800 mb-3">
+                          ✅ Completed Issues ({resolvedIssues.length})
+                        </h4>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          {resolvedIssues.map((issue) => (
+                            <IssueCard
+                              key={issue.id}
+                              issue={issue}
+                              onStatusUpdate={updateStatus}
+                              getStatusColor={getStatusColor}
+                              isResolved={true}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Issue Card Component
+function IssueCard({
+  issue,
+  onStatusUpdate,
+  getStatusColor,
+  isResolved = false,
+}) {
+  return (
+    <div
+      className={`border rounded-lg p-4 ${
+        isResolved ? "bg-green-50" : "bg-white"
+      } hover:shadow-md transition-shadow`}
+    >
+      <div className="flex gap-4 mb-3">
+        <img
+          src={issue.imageUrl}
+          alt="Issue"
+          className="w-20 h-20 object-cover rounded"
+        />
+
+        <div className="flex-1">
+          <div className="flex items-start justify-between mb-2">
+            <span
+              className={`px-2 py-1 rounded text-xs font-semibold ${getStatusColor(
+                issue.status
+              )}`}
+            >
+              {issue.status}
+            </span>
+            {issue.createdAt && (
+              <span className="text-xs text-gray-500">
+                {issue.createdAt.toDate().toLocaleDateString()}
+              </span>
+            )}
+          </div>
+
+          <p className="text-sm text-gray-800 mb-1">
+            <strong>Description:</strong> {issue.description}
+          </p>
+
+          {issue.userEmail && (
+            <p className="text-xs text-gray-600">
+              <strong>Reported by:</strong> {issue.userEmail}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="mb-3">
+        <StatusProgress currentStatus={issue.status} />
+      </div>
+
+      {/* Status Update Controls */}
+      <div className="flex items-center justify-between">
+        <div className="text-xs text-gray-500">
+          {issue.lastUpdated && (
+            <span>
+              Updated:{" "}
+              {new Date(issue.lastUpdated.seconds * 1000).toLocaleDateString()}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-gray-600">Status:</label>
+          <select
+            value={issue.status}
+            onChange={(e) => onStatusUpdate(issue.id, e.target.value)}
+            className="border border-gray-300 rounded px-2 py-1 text-sm bg-white hover:border-green-500 focus:border-green-500 focus:outline-none"
+            disabled={isResolved}
+          >
+            <option value="Open">Open</option>
+            <option value="Assigned">In Progress</option>
+            <option value="Resolved">Completed</option>
+          </select>
+        </div>
       </div>
     </div>
   );

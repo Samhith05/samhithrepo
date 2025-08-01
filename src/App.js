@@ -18,10 +18,18 @@ function App() {
     user,
     isAdmin,
     isApprovedUser,
+    isContractor,
     isPendingApproval,
     isDeniedUser,
     roleError,
+    userStatus,
   } = useAuth();
+
+  console.log("App render - roleError:", roleError);
+  console.log("App render - user:", user?.email);
+  console.log("App render - isAdmin:", isAdmin);
+  console.log("App render - isContractor:", isContractor);
+  console.log("App render - userStatus:", userStatus);
 
   // Show login page if user is not authenticated
   if (!user) {
@@ -53,12 +61,14 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Admin Dashboard - Prioritize admins to their dashboard */}
+        {/* Home route - Direct users to appropriate dashboard */}
         <Route
           path="/"
           element={
             isAdmin ? (
               <AdminDashboard />
+            ) : isContractor ? (
+              <ContractorDashboard />
             ) : isApprovedUser ? (
               <UserDashboard />
             ) : (
@@ -79,21 +89,19 @@ function App() {
         <Route
           path="/user"
           element={
-            isApprovedUser ? <UserDashboard /> : <Navigate to="/" replace />
-          }
-        />
-
-        {/* Contractor Dashboard - Redirect to appropriate dashboard based on role */}
-        <Route
-          path="/contractor"
-          element={
-            isAdmin ? (
-              <Navigate to="/admin" replace />
-            ) : isApprovedUser ? (
-              <Navigate to="/user" replace />
+            isApprovedUser && !isContractor ? (
+              <UserDashboard />
             ) : (
               <Navigate to="/" replace />
             )
+          }
+        />
+
+        {/* Contractor Dashboard - Direct route for contractors */}
+        <Route
+          path="/contractor"
+          element={
+            isContractor ? <ContractorDashboard /> : <Navigate to="/" replace />
           }
         />
 

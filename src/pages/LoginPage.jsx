@@ -2,13 +2,21 @@
 
 import { useState } from "react";
 import { useAuth } from "../components/AuthContext";
+import ContractorCategorySelector from "../components/ContractorCategorySelector";
 
 export default function LoginPage() {
   const { login } = useAuth();
   const [attemptedRole, setAttemptedRole] = useState(null);
+  const [showContractorSelector, setShowContractorSelector] = useState(false);
 
   const handleRoleLogin = async (role) => {
     setAttemptedRole(role);
+
+    if (role === "contractor") {
+      setShowContractorSelector(true);
+      return;
+    }
+
     try {
       await login(role);
     } catch (error) {
@@ -16,6 +24,31 @@ export default function LoginPage() {
       setAttemptedRole(null);
     }
   };
+
+  const handleContractorCategorySelect = async (categoryName, categoryId) => {
+    try {
+      await login("contractor", categoryName);
+      setShowContractorSelector(false);
+    } catch (error) {
+      console.error("Contractor login failed:", error);
+      setAttemptedRole(null);
+      setShowContractorSelector(false);
+    }
+  };
+
+  const handleContractorCancel = () => {
+    setShowContractorSelector(false);
+    setAttemptedRole(null);
+  };
+
+  if (showContractorSelector) {
+    return (
+      <ContractorCategorySelector
+        onCategorySelect={handleContractorCategorySelect}
+        onCancel={handleContractorCancel}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">

@@ -8,6 +8,8 @@ import { useAuth } from "../components/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import UserApprovalManager from "../components/UserApprovalManager";
 import VerifiedUsersManager from "../components/VerifiedUsersManager";
+import ContractorApprovalManager from "../components/ContractorApprovalManager";
+import VerifiedContractorsManager from "../components/VerifiedContractorsManager";
 
 export default function AdminDashboard() {
   const [issues, setIssues] = useState([]);
@@ -75,12 +77,12 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {/* User Management Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* User Approval Manager */}
           <div className="bg-white rounded border border-gray-200 overflow-hidden">
             <div className="bg-orange-600 px-4 py-3">
               <h3 className="text-lg font-bold text-white">
-                🕐 Pending Approvals
+                🕐 Pending User Approvals
               </h3>
             </div>
             <div className="p-4">
@@ -88,15 +90,42 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Verified Users Manager */}
+          {/* Contractor Approval Manager */}
           <div className="bg-white rounded border border-gray-200 overflow-hidden">
             <div className="bg-green-600 px-4 py-3">
+              <h3 className="text-lg font-bold text-white">
+                👷 Contractor Applications
+              </h3>
+            </div>
+            <div className="p-4">
+              <ContractorApprovalManager />
+            </div>
+          </div>
+        </div>
+
+        {/* Verified Users Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Verified Users Manager */}
+          <div className="bg-white rounded border border-gray-200 overflow-hidden">
+            <div className="bg-blue-600 px-4 py-3">
               <h3 className="text-lg font-bold text-white">
                 ✅ Verified Users
               </h3>
             </div>
             <div className="p-4">
               <VerifiedUsersManager />
+            </div>
+          </div>
+
+          {/* Verified Contractors Manager */}
+          <div className="bg-white rounded border border-gray-200 overflow-hidden">
+            <div className="bg-purple-600 px-4 py-3">
+              <h3 className="text-lg font-bold text-white">
+                👷 Active Contractors
+              </h3>
+            </div>
+            <div className="p-4">
+              <VerifiedContractorsManager />
             </div>
           </div>
         </div>
