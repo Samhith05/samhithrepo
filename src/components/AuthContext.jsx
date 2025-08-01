@@ -171,6 +171,45 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const checkExistingUserStatus = async (firebaseUser, role) => {
+    try {
+      // Check if user is already in approved users
+      const approvedDoc = await getDoc(
+        doc(db, "approvedUsers", firebaseUser.uid)
+      );
+      if (approvedDoc.exists()) {
+        console.log("User already exists in approved users");
+        return true;
+      }
+
+      // Check if user has pending approval
+      const pendingDoc = await getDoc(
+        doc(db, "pendingApprovals", firebaseUser.uid)
+      );
+      if (pendingDoc.exists()) {
+        console.log("User already has pending approval");
+        return true;
+      }
+
+      // For contractors, also check contractor-specific collections
+      if (role === "contractor") {
+        const contractorDoc = await getDoc(
+          doc(db, "contractorApprovals", firebaseUser.uid)
+        );
+        if (contractorDoc.exists()) {
+          console.log("Contractor already exists in contractor approvals");
+          return true;
+        }
+      }
+
+      console.log("User is new, needs approval request");
+      return false;
+    } catch (error) {
+      console.error("Error checking existing user status:", error);
+      return false;
+    }
+  };
+
   const login = async (role = null, contractorCategory = null) => {
     console.log(
       "Login called with role:",
@@ -195,11 +234,20 @@ export function AuthProvider({ children }) {
         );
 
         if (isRoleValid && (role === "user" || role === "contractor")) {
-          // Create approval request if needed
-          await createApprovalRequest(result.user, role, contractorCategory);
-          setUserStatus("pending");
-          setUserRole(role);
-          setContractorCategory(contractorCategory);
+          // Check if user already exists in the system
+          const existingApproval = await checkExistingUserStatus(
+            result.user,
+            role
+          );
+
+          if (!existingApproval) {
+            // Only create approval request for new users
+            await createApprovalRequest(result.user, role, contractorCategory);
+            setUserStatus("pending");
+            setUserRole(role);
+            setContractorCategory(contractorCategory);
+          }
+          // If user exists, checkUserStatus will be called by the auth state change listener
         }
       }
 

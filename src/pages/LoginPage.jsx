@@ -3,17 +3,45 @@
 import { useState } from "react";
 import { useAuth } from "../components/AuthContext";
 import ContractorCategorySelector from "../components/ContractorCategorySelector";
+import { auth, db } from "../firebase";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function LoginPage() {
   const { login } = useAuth();
   const [attemptedRole, setAttemptedRole] = useState(null);
   const [showContractorSelector, setShowContractorSelector] = useState(false);
+  const [isCheckingContractor, setIsCheckingContractor] = useState(false);
 
   const handleRoleLogin = async (role) => {
     setAttemptedRole(role);
 
     if (role === "contractor") {
-      setShowContractorSelector(true);
+      setIsCheckingContractor(true);
+
+      try {
+        // First, authenticate with Google to get user info
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+
+        // Check if this contractor already exists in the system
+        const existingContractor = await checkExistingContractor(result.user);
+
+        if (existingContractor) {
+          // User is an existing contractor, proceed with normal login
+          console.log("Existing contractor found, proceeding with login");
+          await login("contractor");
+        } else {
+          // New contractor, show category selector
+          console.log("New contractor, showing category selector");
+          setShowContractorSelector(true);
+        }
+      } catch (error) {
+        console.error("Contractor check failed:", error);
+        setAttemptedRole(null);
+      } finally {
+        setIsCheckingContractor(false);
+      }
       return;
     }
 
@@ -22,6 +50,39 @@ export default function LoginPage() {
     } catch (error) {
       console.error("Login failed:", error);
       setAttemptedRole(null);
+    }
+  };
+
+  const checkExistingContractor = async (firebaseUser) => {
+    try {
+      // Check if user exists in approved users as contractor
+      const approvedDoc = await getDoc(
+        doc(db, "approvedUsers", firebaseUser.uid)
+      );
+      if (approvedDoc.exists() && approvedDoc.data().role === "contractor") {
+        return true;
+      }
+
+      // Check if user exists in contractor approvals (approved, pending, or denied)
+      const contractorDoc = await getDoc(
+        doc(db, "contractorApprovals", firebaseUser.uid)
+      );
+      if (contractorDoc.exists()) {
+        return true;
+      }
+
+      // Check if user has pending approval as contractor in general pending approvals
+      const pendingDoc = await getDoc(
+        doc(db, "pendingApprovals", firebaseUser.uid)
+      );
+      if (pendingDoc.exists() && pendingDoc.data().role === "contractor") {
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error("Error checking existing contractor:", error);
+      return false;
     }
   };
 
@@ -98,13 +159,22 @@ export default function LoginPage() {
           {/* Contractor Login */}
           <button
             onClick={() => handleRoleLogin("contractor")}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded transition-colors flex items-center justify-center gap-3"
+            disabled={isCheckingContractor}
+            className={`w-full font-medium py-3 px-4 rounded transition-colors flex items-center justify-center gap-3 ${
+              isCheckingContractor
+                ? "bg-gray-400 cursor-not-allowed text-white"
+                : "bg-green-600 hover:bg-green-700 text-white"
+            }`}
           >
             <span className="text-xl">👷</span>
             <div className="text-left">
-              <div className="font-semibold">Contractor Login</div>
+              <div className="font-semibold">
+                {isCheckingContractor ? "Checking..." : "Contractor Login"}
+              </div>
               <div className="text-sm opacity-90">
-                Handle assigned maintenance tasks
+                {isCheckingContractor
+                  ? "Verifying your status..."
+                  : "Handle assigned maintenance tasks"}
               </div>
             </div>
           </button>
