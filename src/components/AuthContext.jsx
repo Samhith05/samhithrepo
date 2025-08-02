@@ -2,13 +2,17 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { auth, db } from "../firebase";
 import {
+  GoogleAuthProvider,
+  signInWithPopup,
   signOut,
   onAuthStateChanged,
 } from "firebase/auth";
 import {
+  collection,
   doc,
   getDoc,
   setDoc,
+  addDoc,
   Timestamp,
 } from "firebase/firestore";
 
@@ -18,6 +22,15 @@ const ADMIN_EMAILS = [
   "siddharthpaladugula@gmail.com",
 ];
 
+// Pre-approved contractor emails with their categories
+const PRE_APPROVED_CONTRACTORS = {
+  "24071a6201@vnrvjiet.in": "Electricals",
+  "24071a6237@vnrvjiet.in": "HVAC",
+  "24071a6760@vnrvjiet.in": "Civil",
+  "24071A6210@vnrvjiet.in": "Plumbing",
+  "24071a6747@vnrvjiet.in": "Common Area Maintenance"
+};
+
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
@@ -26,6 +39,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [userStatus, setUserStatus] = useState("loading");
   const [userRole, setUserRole] = useState(null);
+  const [contractorCategory, setContractorCategory] = useState(null);
   const [roleError, setRoleError] = useState(null);
 
   useEffect(() => {
@@ -56,9 +70,36 @@ export function AuthProvider({ children }) {
         setUserRole("admin");
         setRoleError(null);
         return;
+      }            // Check if user is a pre-approved contractor
+      if (PRE_APPROVED_CONTRACTORS[firebaseUser.email]) {
+        console.log("🔧 Pre-approved contractor detected:", firebaseUser.email);
+        const category = PRE_APPROVED_CONTRACTORS[firebaseUser.email];
+        console.log("🔧 Category assigned:", category);
+
+        // Create or update user in contractorApprovals collection
+        try {
+          await setDoc(doc(db, "contractorApprovals", firebaseUser.uid), {
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            category: category,
+            status: "approved",
+            createdAt: new Date(),
+            isPreApproved: true
+          }, { merge: true });
+
+          console.log("✅ Pre-approved contractor saved to database");
+        } catch (error) {
+          console.error("Error saving pre-approved contractor:", error);
+        }
+
+        setUserStatus("approved");
+        setUserRole("contractor");
+        setContractorCategory(category);
+        console.log("✅ Pre-approved contractor approved");
+        return;
       }
 
-      // Check if user exists in approved users
+      // Check if user is in approved users collection
       const userDoc = await getDoc(doc(db, "approvedUsers", firebaseUser.uid));
 
       if (userDoc.exists()) {
@@ -97,38 +138,70 @@ export function AuthProvider({ children }) {
       setRoleError(null);
 
     } catch (error) {
-      console.error("❌ Error checking user status:", error);
-      setUserStatus("new");
-      setUserRole(null);
+      console.error("Error checking user status:", error);
+      setUserStatus("pending");
     }
   };
 
-  const login = async (role) => {
-    console.log("🔍 Login called with role:", role);
-    setRoleError(null);
-
+  const createApprovalRequest = async (
+    firebaseUser,
+    role = "user",
+    contractorCategory = null
+  ) => {
     try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        throw new Error("No authenticated user");
+      const requestData = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName || "",
+        photoURL: firebaseUser.photoURL || "",
+        requestedAt: Timestamp.now(),
+        status: "waiting_approval",
+        role: role,
+        contractorCategory: contractorCategory,
+      };
+
+      if (role === "contractor") {
+        // Add to contractor approvals collection
+        await setDoc(
+          doc(db, "contractorApprovals", firebaseUser.uid),
+          requestData
+        );
+
+        // Also add to approval requests for admin notifications
+        await addDoc(collection(db, "contractorRequests"), requestData);
+      } else {
+        // Add to pending approvals collection
+        await setDoc(
+          doc(db, "pendingApprovals", firebaseUser.uid),
+          requestData
+        );
+
+        // Also add to approval requests for admin notifications
+        await addDoc(collection(db, "approvalRequests"), requestData);
+      }
+    } catch (error) {
+      console.error("Error creating approval request:", error);
+    }
+  };
+
+  const checkExistingUserStatus = async (firebaseUser, role) => {
+    try {
+      // Check if user is already in approved users
+      const approvedDoc = await getDoc(
+        doc(db, "approvedUsers", firebaseUser.uid)
+      );
+      if (approvedDoc.exists()) {
+        console.log("User already exists in approved users");
+        return true;
       }
 
-      // Admin role check
-      if (role === "admin" && !ADMIN_EMAILS.includes(currentUser.email)) {
-        setRoleError({
-          type: "admin_access_denied",
-          message: "Access Denied: You are not an administrator."
-        });
-        return;
-      }
-
-      // Admin trying user role
-      if (role === "user" && ADMIN_EMAILS.includes(currentUser.email)) {
-        setRoleError({
-          type: "admin_role_conflict",
-          message: "Access Denied: Administrators must use the Admin role."
-        });
-        return;
+      // Check if user has pending approval
+      const pendingDoc = await getDoc(
+        doc(db, "pendingApprovals", firebaseUser.uid)
+      );
+      if (pendingDoc.exists()) {
+        console.log("User already has pending approval");
+        return true;
       }
 
       // For contractors, create application if new
@@ -196,7 +269,8 @@ export function AuthProvider({ children }) {
   const isAdmin = user && ADMIN_EMAILS.includes(user.email);
   const isApprovedUser = userStatus === "approved" || isAdmin;
   const isContractor = userRole === "contractor" && isApprovedUser;
-  const isPendingApproval = userStatus === "pending";
+  const isPendingApproval = userStatus === "pending" && !isAdmin;
+  const isDeniedUser = userStatus === "denied" && !isAdmin;
 
   return (
     <AuthContext.Provider
@@ -210,6 +284,7 @@ export function AuthProvider({ children }) {
         isPendingApproval,
         userStatus,
         userRole,
+        contractorCategory,
         roleError,
         clearRoleError: () => setRoleError(null),
         setRoleError: (error) => setRoleError(error),
