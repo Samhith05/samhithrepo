@@ -9,12 +9,12 @@ import LoginPage from "./pages/LoginPage";
 import UserDashboard from "./pages/UserDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import ContractorDashboard from "./pages/ContractorDashboard";
-import { useAuth } from "./components/AuthContext";
+import { AuthProvider, useAuth } from "./components/AuthContext";
 import UserStatusMessage from "./components/UserStatusMessage";
 import RoleAccessDenied from "./components/RoleAccessDenied";
 import LoadingSpinner from "./components/LoadingSpinner";
 
-function App() {
+function AppContent() {
   const {
     user,
     isAdmin,
@@ -117,6 +117,14 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
