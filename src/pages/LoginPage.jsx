@@ -5,10 +5,10 @@ import { useAuth } from "../components/AuthContext";
 import ContractorCategorySelector from "../components/ContractorCategorySelector";
 import { auth, db } from "../firebase";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, getDocs, collection } from "firebase/firestore";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, roleError, clearRoleError, setRoleError, isAdmin } = useAuth();
   const [showContractorSelector, setShowContractorSelector] = useState(false);
   const [isCheckingContractor, setIsCheckingContractor] = useState(false);
 
@@ -25,11 +25,28 @@ export default function LoginPage() {
         const existingContractor = await checkExistingContractor(result.user);
 
         if (existingContractor) {
-          // User is an existing contractor, just let AuthContext handle the rest
-          console.log("Existing contractor found, waiting for auth state update");
-          // Don't call login again, the auth state change will handle it
+          // User is an existing contractor, don't call login - just let AuthContext handle the auth state change
+          console.log("✅ Existing contractor found, authentication complete");
+          // Clear any existing role errors since this is a valid contractor
+          clearRoleError();
+          // The auth state change will automatically redirect them to their dashboard
+          // No need to call login() function which has role restrictions
         } else {
-          // New contractor, show category selector
+          // New contractor - check if they're trying to use admin/user email
+          const userEmail = result.user.email;
+
+          // Check if this email exists in admin or user collections
+          const isAdminOrUser = await checkIfAdminOrUser(userEmail);
+
+          if (isAdminOrUser) {
+            // Block admin/user emails from contractor registration
+            setRoleError("This email is already registered as admin/user. Please use a different email for contractor registration.");
+            await auth.signOut(); // Sign out to clear auth state
+            setIsCheckingContractor(false);
+            return;
+          }
+
+          // New contractor with non-admin/user email, show category selector
           console.log("New contractor, showing category selector");
           setShowContractorSelector(true);
         }
@@ -83,6 +100,35 @@ export default function LoginPage() {
       return false;
     } catch (error) {
       console.error("Error checking existing contractor:", error);
+      return false;
+    }
+  };
+
+  const checkIfAdminOrUser = async (email) => {
+    try {
+      // Check if email exists in approved users with admin or user role
+      const approvedUsersSnapshot = await getDocs(collection(db, "approvedUsers"));
+
+      for (const doc of approvedUsersSnapshot.docs) {
+        const userData = doc.data();
+        if (userData.email === email && (userData.role === "admin" || userData.role === "user")) {
+          return true;
+        }
+      }
+
+      // Check if email exists in pending approvals with admin or user role
+      const pendingApprovalsSnapshot = await getDocs(collection(db, "pendingApprovals"));
+
+      for (const doc of pendingApprovalsSnapshot.docs) {
+        const userData = doc.data();
+        if (userData.email === email && (userData.role === "admin" || userData.role === "user")) {
+          return true;
+        }
+      }
+
+      return false;
+    } catch (error) {
+      console.error("Error checking admin/user status:", error);
       return false;
     }
   };
@@ -439,6 +485,112 @@ export default function LoginPage() {
                 <p style={{ color: '#d1d5db' }}>Join thousands of satisfied users</p>
               </div>
 
+              {/* Error Display */}
+              {roleError && (
+                <div style={{
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                  border: '2px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: '16px',
+                  padding: '24px',
+                  marginBottom: '32px',
+                  backdropFilter: 'blur(10px)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  boxShadow: '0 8px 32px rgba(239, 68, 68, 0.2)'
+                }}>
+                  {/* Animated background */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'linear-gradient(45deg, transparent, rgba(239, 68, 68, 0.1), transparent)',
+                    animation: 'slide 3s ease-in-out infinite'
+                  }}></div>
+
+                  <div style={{
+                    position: 'relative',
+                    zIndex: 1,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '16px'
+                  }}>
+                    {/* Error Icon */}
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      backgroundColor: '#ef4444',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '24px',
+                      color: 'white',
+                      flexShrink: 0,
+                      animation: 'bounce 2s infinite',
+                      boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
+                    }}>
+                      🚫
+                    </div>
+
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{
+                        color: '#fca5a5',
+                        fontSize: '18px',
+                        fontWeight: 'bold',
+                        margin: '0 0 12px 0',
+                        textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+                      }}>
+                        Authentication Error
+                      </h4>
+                      <p style={{
+                        color: '#fee2e2',
+                        fontSize: '15px',
+                        lineHeight: '1.6',
+                        margin: '0 0 20px 0',
+                        fontWeight: '500'
+                      }}>
+                        {roleError.message || roleError}
+                      </p>
+
+                      {/* Enhanced Action Button */}
+                      <button
+                        onClick={clearRoleError}
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.3))',
+                          color: '#fca5a5',
+                          border: '1px solid rgba(239, 68, 68, 0.4)',
+                          borderRadius: '12px',
+                          padding: '12px 20px',
+                          fontSize: '14px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          boxShadow: '0 4px 12px rgba(239, 68, 68, 0.1)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.4))';
+                          e.target.style.transform = 'translateY(-2px)';
+                          e.target.style.boxShadow = '0 8px 25px rgba(239, 68, 68, 0.2)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.3))';
+                          e.target.style.transform = 'translateY(0)';
+                          e.target.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.1)';
+                        }}
+                      >
+                        <span>✕</span>
+                        Dismiss Error
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Login Buttons */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {/* User Login */}
@@ -697,6 +849,25 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      {/* CSS Animations */}
+      <style jsx>{`
+        @keyframes slide {
+          0% { transform: translateX(-100%); }
+          50% { transform: translateX(100%); }
+          100% { transform: translateX(-100%); }
+        }
+        
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-20px); }
+        }
+      `}</style>
     </div>
   );
 }

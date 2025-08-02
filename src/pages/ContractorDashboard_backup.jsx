@@ -11,24 +11,33 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { useAuth } from "../components/AuthContext";
+import StatusProgress from "../components/StatusProgress";
 
 export default function ContractorDashboard() {
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedImage, setSelectedImage] = useState(null);
   const { user, logout, contractorCategory } = useAuth();
 
   console.log("🚀 ContractorDashboard - contractorCategory:", contractorCategory);
 
   useEffect(() => {
-    if (!contractorCategory || !user?.email) {
-      console.log("No contractor category or user email found");
+    if (!contractorCategory) {
+      console.log("No contractor category found");
       setLoading(false);
       return;
     }
 
     console.log("🔍 Contractor Dashboard: Querying for issues with category:", contractorCategory);
-    console.log("🔍 Contractor email:", user.email);
+
+    // First, let's see ALL issues to debug category matching
+    const allIssuesQuery = collection(db, "issues");
+    const unsubAll = onSnapshot(allIssuesQuery, (snapshot) => {
+      console.log("🔍 ALL ISSUES DEBUG:");
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        console.log(`Issue ${doc.id}: category="${data.category}" | contractorCategory="${contractorCategory}" | match=${data.category === contractorCategory}`);
+      });
+    });
 
     // Query for issues that match the contractor's category
     const q = query(
@@ -41,60 +50,37 @@ export default function ContractorDashboard() {
         "🔍 Firestore snapshot received for contractor category, docs count:",
         snapshot.docs.length
       );
-      const allData = snapshot.docs.map((doc) => ({
+      const data = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
 
-      // Filter to show:
-      // 1. Issues assigned to this contractor (any status)
-      // 2. Open issues in their category (not yet assigned to anyone)
-      const filteredData = allData.filter(issue => {
-        return (
-          (issue.assignedTo === user.email) ||  // Issues assigned to this contractor
-          (issue.status === 'Open' && !issue.assignedTo)  // Open unassigned issues in their category
-        );
-      });
-
       // Sort by creation date (newest first)
-      filteredData.sort((a, b) => {
+      data.sort((a, b) => {
         const dateA = a.createdAt?.toDate() || new Date(0);
         const dateB = b.createdAt?.toDate() || new Date(0);
         return dateB - dateA;
       });
 
-      console.log("🔍 Filtered issues for contractor:", filteredData.length);
-      setIssues(filteredData);
+      console.log("🔍 Filtered issues for contractor:", data);
+      setIssues(data);
       setLoading(false);
     });
 
     return () => {
       unsub();
+      unsubAll();
     };
   }, [contractorCategory]);
 
   const updateStatus = async (id, newStatus) => {
     try {
       const ref = doc(db, "issues", id);
-      const updateData = {
+      await updateDoc(ref, {
         status: newStatus,
         lastUpdated: new Date(),
         updatedBy: user?.displayName || user?.email || "Contractor",
-      };
-
-      // Add completion timestamp for resolved issues
-      if (newStatus === 'Resolved') {
-        updateData.resolvedAt = new Date();
-        updateData.resolvedBy = user?.displayName || user?.email;
-      }
-
-      // Add start timestamp for in-progress issues
-      if (newStatus === 'In Progress') {
-        updateData.startedAt = new Date();
-        updateData.startedBy = user?.displayName || user?.email;
-      }
-
-      await updateDoc(ref, updateData);
+      });
       console.log(`Issue ${id} status updated to ${newStatus}`);
     } catch (error) {
       console.error("Error updating status:", error);
@@ -108,8 +94,6 @@ export default function ContractorDashboard() {
         return "bg-yellow-100 text-yellow-800";
       case "Assigned":
         return "bg-blue-100 text-blue-800";
-      case "In Progress":
-        return "bg-purple-100 text-purple-800";
       case "Resolved":
         return "bg-green-100 text-green-800";
       default:
@@ -119,7 +103,6 @@ export default function ContractorDashboard() {
 
   const openIssues = issues.filter((issue) => issue.status === "Open");
   const assignedIssues = issues.filter((issue) => issue.status === "Assigned");
-  const inProgressIssues = issues.filter((issue) => issue.status === "In Progress");
   const resolvedIssues = issues.filter((issue) => issue.status === "Resolved");
 
   // Helper component for a styled issue card
@@ -147,24 +130,15 @@ export default function ContractorDashboard() {
         }}
       >
         <div style={{ display: 'flex', gap: '12px' }}>
-          <img
-            src={issue.imageUrl}
-            alt="Issue"
+          <img 
+            src={issue.imageUrl} 
+            alt="Issue" 
             style={{
               width: '80px',
               height: '80px',
               objectFit: 'cover',
               borderRadius: '12px',
-              flexShrink: 0,
-              cursor: 'pointer',
-              transition: 'transform 0.3s ease'
-            }}
-            onClick={() => setSelectedImage(issue.imageUrl)}
-            onMouseEnter={(e) => {
-              e.target.style.transform = 'scale(1.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'scale(1)';
+              flexShrink: 0
             }}
           />
           <div style={{ flexGrow: 1 }}>
@@ -209,10 +183,10 @@ export default function ContractorDashboard() {
             )}
           </div>
         </div>
-
+        
         <div style={{ display: 'flex', gap: '8px', paddingTop: '8px', borderTop: '1px solid #374151' }}>
           {issue.status === 'Open' && (
-            <button
+            <button 
               onClick={() => onStatusUpdate(issue.id, 'Assigned')}
               style={{
                 backgroundColor: '#3b82f6',
@@ -231,48 +205,8 @@ export default function ContractorDashboard() {
               Accept Task
             </button>
           )}
-          {issue.status === 'Assigned' && issue.assignedTo === user?.email && (
-            <>
-              <button
-                onClick={() => onStatusUpdate(issue.id, 'In Progress')}
-                style={{
-                  backgroundColor: '#8b5cf6',
-                  color: 'white',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.3s ease'
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#7c3aed'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = '#8b5cf6'}
-              >
-                Start Work
-              </button>
-              <button
-                onClick={() => onStatusUpdate(issue.id, 'Resolved')}
-                style={{
-                  backgroundColor: '#059669',
-                  color: 'white',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.3s ease'
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#047857'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = '#059669'}
-              >
-                Mark Complete
-              </button>
-            </>
-          )}
-          {issue.status === 'In Progress' && issue.assignedTo === user?.email && (
-            <button
+          {issue.status === 'Assigned' && (
+            <button 
               onClick={() => onStatusUpdate(issue.id, 'Resolved')}
               style={{
                 backgroundColor: '#059669',
@@ -291,19 +225,6 @@ export default function ContractorDashboard() {
               Mark Complete
             </button>
           )}
-          {issue.status === 'Assigned' && issue.assignedTo !== user?.email && (
-            <div style={{
-              backgroundColor: '#6b7280',
-              color: 'white',
-              fontSize: '11px',
-              fontWeight: 'bold',
-              padding: '6px 12px',
-              borderRadius: '6px',
-              textAlign: 'center'
-            }}>
-              Assigned to: {issue.assignedTo}
-            </div>
-          )}
         </div>
       </div>
     );
@@ -316,76 +237,6 @@ export default function ContractorDashboard() {
       color: 'white',
       padding: '20px'
     }}>
-      {/* Image Modal */}
-      {selectedImage && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.9)',
-          zIndex: 1000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '20px'
-        }}
-          onClick={() => setSelectedImage(null)}
-        >
-          <div style={{
-            position: 'relative',
-            maxWidth: '90vw',
-            maxHeight: '90vh',
-            backgroundColor: '#1f2937',
-            borderRadius: '12px',
-            overflow: 'hidden',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-          }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close Button */}
-            <button
-              onClick={() => setSelectedImage(null)}
-              style={{
-                position: 'absolute',
-                top: '16px',
-                right: '16px',
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '50%',
-                width: '40px',
-                height: '40px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                fontSize: '20px',
-                zIndex: 1001,
-                transition: 'background-color 0.3s ease'
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'}
-            >
-              ×
-            </button>
-
-            <img
-              src={selectedImage}
-              alt="Issue Detail"
-              style={{
-                width: '100%',
-                height: 'auto',
-                maxHeight: '90vh',
-                objectFit: 'contain',
-                display: 'block'
-              }}
-            />
-          </div>
-        </div>
-      )}
-
       <div style={{
         maxWidth: '1200px',
         margin: '0 auto',
@@ -684,6 +535,121 @@ export default function ContractorDashboard() {
             </div>
           </>
         )}
+      </div>
+    </div>
+  );
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Resolved Issues */}
+                    {resolvedIssues.length > 0 && (
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-800 mb-3">
+                          ✅ Completed Issues ({resolvedIssues.length})
+                        </h4>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          {resolvedIssues.map((issue) => (
+                            <IssueCard
+                              key={issue.id}
+                              issue={issue}
+                              onStatusUpdate={updateStatus}
+                              getStatusColor={getStatusColor}
+                              isResolved={true}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Issue Card Component
+function IssueCard({
+  issue,
+  onStatusUpdate,
+  getStatusColor,
+  isResolved = false,
+}) {
+  return (
+    <div
+      className={`border rounded-lg p-4 ${isResolved ? "bg-green-50" : "bg-white"
+        } hover:shadow-md transition-shadow`}
+    >
+      <div className="flex gap-4 mb-3">
+        <img
+          src={issue.imageUrl}
+          alt="Issue"
+          className="w-20 h-20 object-cover rounded"
+        />
+
+        <div className="flex-1">
+          <div className="flex items-start justify-between mb-2">
+            <span
+              className={`px-2 py-1 rounded text-xs font-semibold ${getStatusColor(
+                issue.status
+              )}`}
+            >
+              {issue.status}
+            </span>
+            {issue.createdAt && (
+              <span className="text-xs text-gray-500">
+                {issue.createdAt.toDate().toLocaleDateString()}
+              </span>
+            )}
+          </div>
+
+          <p className="text-sm text-gray-800 mb-1">
+            <strong>Description:</strong> {issue.description}
+          </p>
+
+          {issue.userEmail && (
+            <p className="text-xs text-gray-600">
+              <strong>Reported by:</strong> {issue.userEmail}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="mb-3">
+        <StatusProgress currentStatus={issue.status} />
+      </div>
+
+      {/* Status Update Controls */}
+      <div className="flex items-center justify-between">
+        <div className="text-xs text-gray-500">
+          {issue.lastUpdated && (
+            <span>
+              Updated:{" "}
+              {new Date(issue.lastUpdated.seconds * 1000).toLocaleDateString()}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-gray-600">Status:</label>
+          <select
+            value={issue.status}
+            onChange={(e) => onStatusUpdate(issue.id, e.target.value)}
+            className="border border-gray-300 rounded px-2 py-1 text-sm bg-white hover:border-green-500 focus:border-green-500 focus:outline-none"
+            disabled={isResolved}
+          >
+            <option value="Open">Open</option>
+            <option value="Assigned">In Progress</option>
+            <option value="Resolved">Completed</option>
+          </select>
+        </div>
       </div>
     </div>
   );

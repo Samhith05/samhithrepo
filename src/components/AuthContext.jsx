@@ -37,10 +37,15 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log("Auth state changed:", firebaseUser?.email || "No user");
+      console.log("🔥 Auth state changed:", firebaseUser?.email || "No user");
+
+      // Clear any problematic sessionStorage flags that might be blocking auth
+      sessionStorage.removeItem('contractorAuthInProgress');
 
       if (firebaseUser) {
         setUser(firebaseUser);
+        // Clear any existing role errors immediately when user authenticates
+        setRoleError(null);
         await checkUserStatus(firebaseUser);
       } else {
         // No authenticated user - reset all states
@@ -58,25 +63,34 @@ export function AuthProvider({ children }) {
 
   const checkUserStatus = async (firebaseUser) => {
     try {
+      console.log("🔍 checkUserStatus starting for:", firebaseUser.email);
+
+      // Clear any existing role errors when checking user status
+      setRoleError(null);
+
       // Check if user is an admin first - admins get automatic approval
       if (ADMIN_EMAILS.includes(firebaseUser.email)) {
+        console.log("🔑 Admin user detected:", firebaseUser.email);
         setUserStatus("approved");
         setUserRole("admin");
         return;
-      }
-
-      // Check if user is in approved users collection
+      }      // Check if user is in approved users collection
       const userDoc = await getDoc(doc(db, "approvedUsers", firebaseUser.uid));
 
       if (userDoc.exists()) {
         const userData = userDoc.data();
+        console.log("📋 Found in approvedUsers:", userData);
         if (userData.status === "approved") {
           setUserStatus("approved");
           setUserRole(userData.role || "user");
           const category = userData.contractorCategory || null;
           console.log("🔍 AuthContext: Setting approved user contractor category:", category, "from userData:", userData);
           setContractorCategory(category);
+          // Clear any role errors for approved users
+          setRoleError(null);
+          console.log("✅ User approved with role:", userData.role);
         } else if (userData.status === "denied") {
+          console.log("❌ User denied");
           setUserStatus("denied");
           setUserRole(null);
           setContractorCategory(null);
@@ -89,12 +103,16 @@ export function AuthProvider({ children }) {
 
         if (contractorDoc.exists()) {
           const contractorData = contractorDoc.data();
+          console.log("🏗️ Found in contractorApprovals:", contractorData);
           if (contractorData.status === "approved") {
+            console.log("✅ Contractor approved!");
             setUserStatus("approved");
             setUserRole("contractor");
             const category = contractorData.category || contractorData.contractorCategory;
             console.log("🔍 AuthContext: Setting contractor category:", category, "from data:", contractorData);
             setContractorCategory(category);
+            // Clear any role errors for approved contractors
+            setRoleError(null);
 
             // Move to approved users collection
             await setDoc(doc(db, "approvedUsers", firebaseUser.uid), {
@@ -104,10 +122,12 @@ export function AuthProvider({ children }) {
               status: "approved",
             });
           } else if (contractorData.status === "denied") {
+            console.log("❌ Contractor denied");
             setUserStatus("denied");
             setUserRole(null);
             setContractorCategory(null);
           } else {
+            console.log("⏳ Contractor pending approval");
             setUserStatus("pending");
             setUserRole("contractor");
             const category = contractorData.category || contractorData.contractorCategory;
@@ -256,6 +276,13 @@ export function AuthProvider({ children }) {
           contractorCategory
         );
 
+        if (!isRoleValid) {
+          // Role validation failed, but don't throw error
+          // Just set error state and return a special result
+          console.log("Role validation failed, staying authenticated but showing error");
+          return { ...result, roleValidationFailed: true };
+        }
+
         if (isRoleValid && (role === "user" || role === "contractor")) {
           // Check if user already exists in the system
           const existingApproval = await checkExistingUserStatus(
@@ -295,6 +322,14 @@ export function AuthProvider({ children }) {
 
     const isUserAdmin = ADMIN_EMAILS.includes(firebaseUser.email);
 
+    // For contractor role, skip all validation - contractor auth is handled separately
+    if (role === "contractor") {
+      console.log("Contractor role detected, skipping validation");
+      setRoleError(null);
+      return true;
+    }
+
+    // Check if non-admin tries to access admin role
     if (role === "admin" && !isUserAdmin) {
       console.log("Setting role error for non-admin trying admin access");
       setRoleError({
@@ -305,11 +340,13 @@ export function AuthProvider({ children }) {
       return false;
     }
 
-    if (role === "contractor" && !contractorCategory) {
-      console.log("Setting role error for contractor without category");
+    // Check if admin tries to access user role
+    if (role === "user" && isUserAdmin) {
+      console.log("Setting role error for admin trying user access");
       setRoleError({
-        type: "contractor_category_required",
-        message: "Please select a contractor category to continue.",
+        type: "admin_role_conflict",
+        message:
+          "Access Denied: You have administrator privileges and cannot access the system as a regular user. Please select 'Admin' role to continue.",
       });
       return false;
     }
@@ -349,6 +386,7 @@ export function AuthProvider({ children }) {
         contractorCategory,
         roleError,
         clearRoleError: () => setRoleError(null),
+        setRoleError: (error) => setRoleError(error),
       }}
     >
       {children}

@@ -73,18 +73,36 @@ export default function VerifiedContractorsManager() {
 
   if (loading) {
     return (
-      <div className="bg-white border rounded p-4 mb-4">
-        <h3 className="text-lg font-semibold mb-2">👷 Verified Contractors</h3>
-        <p className="text-gray-500">Loading verified contractors...</p>
+      <div style={{
+        backgroundColor: 'rgba(31, 41, 55, 0.8)',
+        border: '1px solid rgba(75, 85, 99, 0.5)',
+        borderRadius: '12px',
+        padding: '16px',
+        marginBottom: '16px'
+      }}>
+        <p style={{
+          color: '#9ca3af',
+          textAlign: 'center',
+          margin: 0
+        }}>Loading verified contractors...</p>
       </div>
     );
   }
 
   if (verifiedContractors.length === 0) {
     return (
-      <div className="bg-white border rounded p-4 mb-4">
-        <h3 className="text-lg font-semibold mb-2">👷 Verified Contractors</h3>
-        <p className="text-gray-500">No verified contractors yet.</p>
+      <div style={{
+        backgroundColor: 'rgba(31, 41, 55, 0.8)',
+        border: '1px solid rgba(75, 85, 99, 0.5)',
+        borderRadius: '12px',
+        padding: '16px',
+        marginBottom: '16px'
+      }}>
+        <p style={{
+          color: '#9ca3af',
+          textAlign: 'center',
+          margin: 0
+        }}>No verified contractors yet.</p>
       </div>
     );
   }
@@ -103,50 +121,109 @@ export default function VerifiedContractorsManager() {
   );
 
   return (
-    <div className="bg-white border rounded p-4 mb-4">
-      <h3 className="text-lg font-semibold mb-4">
-        👷 Verified Contractors ({verifiedContractors.length})
-      </h3>
-
-      <div className="space-y-4">
+    <div style={{
+      backgroundColor: 'transparent',
+      border: 'none',
+      borderRadius: '12px',
+      padding: '0',
+      marginBottom: '16px'
+    }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {Object.entries(contractorsByCategory).map(
           ([category, contractors]) => (
-            <div key={category} className="border rounded p-3 bg-green-50">
-              <h4 className="font-medium text-green-800 mb-2 flex items-center gap-2">
-                <span className="bg-green-100 px-2 py-1 rounded text-sm">
+            <div key={category} style={{
+              backgroundColor: 'rgba(31, 41, 55, 0.8)',
+              border: '1px solid rgba(168, 139, 250, 0.3)',
+              borderRadius: '12px',
+              padding: '16px'
+            }}>
+              <h4 style={{
+                fontWeight: 'bold',
+                color: '#a78bfa',
+                marginBottom: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '14px'
+              }}>
+                <span style={{
+                  backgroundColor: 'rgba(168, 139, 250, 0.2)',
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  border: '1px solid rgba(168, 139, 250, 0.3)'
+                }}>
                   {category}
                 </span>
-                <span className="text-sm text-green-600">
+                <span style={{
+                  fontSize: '12px',
+                  color: '#c4b5fd'
+                }}>
                   ({contractors.length} contractor
                   {contractors.length !== 1 ? "s" : ""})
                 </span>
               </h4>
 
-              <div className="space-y-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {contractors.map((contractor) => (
                   <div
                     key={contractor.id}
-                    className="bg-white border rounded p-3"
+                    style={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '8px',
+                      padding: '12px'
+                    }}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '8px'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        flex: 1,
+                        minWidth: '150px'
+                      }}>
                         {contractor.photoURL && (
                           <img
                             src={contractor.photoURL}
                             alt="Profile"
-                            className="w-8 h-8 rounded-full"
+                            style={{
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '50%',
+                              border: '1px solid rgba(168, 139, 250, 0.3)'
+                            }}
                           />
                         )}
                         <div>
-                          <p className="font-medium text-sm">
+                          <p style={{
+                            fontWeight: 'bold',
+                            fontSize: '12px',
+                            color: 'white',
+                            margin: '0 0 2px 0'
+                          }}>
                             {contractor.displayName || "No name"}
                           </p>
-                          <p className="text-xs text-gray-600">
+                          <p style={{
+                            fontSize: '10px',
+                            color: '#9ca3af',
+                            margin: '0 0 4px 0'
+                          }}>
                             {contractor.email}
                           </p>
-                          <div className="text-xs text-gray-500 space-y-1">
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
                             {contractor.joinedAt && (
-                              <p>
+                              <p style={{
+                                fontSize: '9px',
+                                color: '#6b7280',
+                                margin: 0
+                              }}>
                                 Joined:{" "}
                                 {contractor.joinedAt
                                   .toDate()
@@ -154,7 +231,11 @@ export default function VerifiedContractorsManager() {
                               </p>
                             )}
                             {contractor.approvedAt && (
-                              <p>
+                              <p style={{
+                                fontSize: '9px',
+                                color: '#6b7280',
+                                margin: 0
+                              }}>
                                 Approved:{" "}
                                 {contractor.approvedAt
                                   .toDate()
@@ -165,13 +246,43 @@ export default function VerifiedContractorsManager() {
                         </div>
                       </div>
 
-                      <div className="flex gap-2 items-center">
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
+                      <div style={{
+                        display: 'flex',
+                        gap: '8px',
+                        alignItems: 'center',
+                        flexShrink: 0
+                      }}>
+                        <span style={{
+                          backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                          color: '#86efac',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontSize: '10px',
+                          fontWeight: 'bold',
+                          border: '1px solid rgba(34, 197, 94, 0.3)'
+                        }}>
                           ✓ Active
                         </span>
                         <button
                           onClick={() => handleDeleteContractor(contractor)}
-                          className="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600 transition-colors"
+                          style={{
+                            backgroundColor: '#ef4444',
+                            color: 'white',
+                            padding: '6px 8px',
+                            borderRadius: '6px',
+                            fontSize: '10px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.backgroundColor = '#dc2626';
+                            e.target.style.transform = 'scale(1.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = '#ef4444';
+                            e.target.style.transform = 'scale(1)';
+                          }}
                           title="Delete contractor"
                         >
                           🗑️

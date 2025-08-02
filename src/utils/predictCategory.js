@@ -57,7 +57,12 @@ export default async function predictCategory(file) {
           const mappedCategory = mapToExpectedCategory(best.className);
           console.log("🗂️ Mapped category:", mappedCategory);
 
-          resolve(mappedCategory);
+          // Return both category and confidence
+          resolve({
+            category: mappedCategory,
+            confidence: best.probability,
+            confidencePercent: (best.probability * 100).toFixed(2)
+          });
         } catch (error) {
           console.error("Error during prediction:", error);
           reject(error);

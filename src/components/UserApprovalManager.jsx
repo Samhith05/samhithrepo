@@ -61,53 +61,152 @@ export default function UserApprovalManager() {
 
   if (pendingRequests.length === 0) {
     return (
-      <div className="bg-white border rounded p-4 mb-4">
-        <h3 className="text-lg font-semibold mb-2">
-          👥 User Approval Requests
-        </h3>
-        <p className="text-gray-500">No pending approval requests.</p>
+      <div style={{
+        backgroundColor: 'rgba(31, 41, 55, 0.8)',
+        border: '1px solid rgba(75, 85, 99, 0.5)',
+        borderRadius: '12px',
+        padding: '16px',
+        marginBottom: '16px'
+      }}>
+        <p style={{
+          color: '#9ca3af',
+          textAlign: 'center',
+          margin: 0
+        }}>No pending approval requests.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white border rounded p-4 mb-4">
-      <h3 className="text-lg font-semibold mb-4">
-        👥 User Approval Requests ({pendingRequests.length})
-      </h3>
-
+    <div style={{
+      backgroundColor: 'transparent',
+      border: 'none',
+      borderRadius: '12px',
+      padding: '0',
+      marginBottom: '16px'
+    }}>
       {pendingRequests.map((request) => (
-        <div key={request.id} className="border rounded p-4 mb-3 bg-gray-50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+        <div key={request.id} style={{
+          backgroundColor: 'rgba(31, 41, 55, 0.8)',
+          border: '1px solid rgba(75, 85, 99, 0.5)',
+          borderRadius: '12px',
+          padding: '16px',
+          marginBottom: '12px',
+          transition: 'all 0.3s ease'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '12px'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              flex: 1,
+              minWidth: '200px'
+            }}>
               {request.photoURL && (
                 <img
                   src={request.photoURL}
                   alt="Profile"
-                  className="w-10 h-10 rounded-full"
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    border: '2px solid rgba(59, 130, 246, 0.5)'
+                  }}
                 />
               )}
               <div>
-                <p className="font-medium">
+                <p style={{
+                  fontWeight: 'bold',
+                  color: 'white',
+                  margin: '0 0 4px 0',
+                  fontSize: '14px'
+                }}>
                   {request.displayName || "No name"}
                 </p>
-                <p className="text-sm text-gray-600">{request.email}</p>
-                <p className="text-xs text-gray-500">
-                  Requested: {request.requestedAt?.toDate().toLocaleString()}
+                <p style={{
+                  fontSize: '12px',
+                  color: '#9ca3af',
+                  margin: '0 0 2px 0'
+                }}>{request.email}</p>
+                <p style={{
+                  fontSize: '10px',
+                  color: '#6b7280',
+                  margin: 0
+                }}>
+                  Joined: {request.requestedAt?.toDate().toLocaleDateString() || "Unknown"}
+                </p>
+                <p style={{
+                  fontSize: '10px',
+                  color: '#6b7280',
+                  margin: 0
+                }}>
+                  Approved: {request.requestedAt?.toDate().toLocaleDateString() || "Unknown"}
                 </p>
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div style={{
+              display: 'flex',
+              gap: '8px',
+              flexShrink: 0
+            }}>
               <button
                 onClick={() => handleApproval(request, true)}
-                className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600"
+                style={{
+                  backgroundColor: '#22c55e',
+                  color: 'white',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#16a34a';
+                  e.target.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = '#22c55e';
+                  e.target.style.transform = 'scale(1)';
+                }}
               >
                 ✓ Approve
               </button>
               <button
                 onClick={() => handleApproval(request, false)}
-                className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600"
+                style={{
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#dc2626';
+                  e.target.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = '#ef4444';
+                  e.target.style.transform = 'scale(1)';
+                }}
               >
                 ✗ Deny
               </button>

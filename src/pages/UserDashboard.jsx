@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../components/AuthContext";
 import UploadForm from "../components/UploadForm";
 import IssueList from "../components/IssueList";
-import QuickStats from "../components/QuickStats";
 import { db } from "../firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 
@@ -40,65 +39,261 @@ export default function UserDashboard() {
   }, [user?.email]);
 
   return (
-    <div className="min-h-screen bg-gray-100 parallax-bg">
-      {/* Header */}
-      <div className="bg-white shadow border-b premium-card" style={{ borderRadius: '0', marginBottom: '0' }}>
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div className="flex items-center gap-3">
-              <div className="floating-element">
-                <span className="text-3xl">🏠</span>
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 25%, #1e40af 50%, #1a1a1a 75%, #0c0c0c 100%)',
+      color: 'white',
+      padding: '20px'
+    }}>
+      <div style={{
+        maxWidth: '1200px',
+        margin: '0 auto',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '24px'
+      }}>
+        {/* Header */}
+        <header style={{
+          background: 'rgba(255, 255, 255, 0.08)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '16px',
+          padding: '20px',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)'
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '16px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                animation: 'bounce 2s infinite'
+              }}>
+                <span style={{ fontSize: '24px' }}>🏠</span>
               </div>
-              <h1 className="text-xl md:text-2xl font-bold gradient-text-premium">
-                AI Maintenance System
-              </h1>
-              <span className="status-badge bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 border border-blue-300">
-                User Portal
-              </span>
+              <div>
+                <h1 style={{
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  margin: '0',
+                  background: 'linear-gradient(135deg, #60a5fa, #3b82f6)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
+                  User Portal
+                </h1>
+                <p style={{
+                  color: '#9ca3af',
+                  margin: '4px 0 0 0',
+                  fontSize: '14px'
+                }}>
+                  Welcome, {user?.displayName || user?.email}
+                </p>
+              </div>
             </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
-              {user && (
-                <span className="text-xs md:text-sm text-gray-600 truncate max-w-48">
-                  Welcome, {user.displayName || user.email}
-                </span>
-              )}
-              <button
-                onClick={logout}
-                className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-200 transform hover:scale-105 shadow-md text-sm"
-              >
-                Logout
-              </button>
-            </div>
+            <button
+              onClick={logout}
+              style={{
+                background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                color: 'white',
+                padding: '10px 20px',
+                borderRadius: '25px',
+                border: 'none',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                fontSize: '14px'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.transform = 'scale(1.05)';
+                e.target.style.boxShadow = '0 8px 25px rgba(239, 68, 68, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'scale(1)';
+                e.target.style.boxShadow = 'none';
+              }}
+            >
+              Logout
+            </button>
+          </div>
+        </header>
+
+        {/* Stats Cards */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '20px'
+        }}>
+          {/* Total Issues Card */}
+          <div style={{
+            background: 'rgba(59, 130, 246, 0.1)',
+            border: '1px solid rgba(59, 130, 246, 0.3)',
+            borderRadius: '16px',
+            padding: '20px',
+            textAlign: 'center',
+            transition: 'all 0.3s ease',
+            cursor: 'pointer'
+          }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-5px)';
+              e.currentTarget.style.boxShadow = '0 20px 40px rgba(59, 130, 246, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            <h3 style={{
+              fontSize: '32px',
+              fontWeight: 'bold',
+              color: '#3b82f6',
+              margin: '0 0 8px 0'
+            }}>
+              {stats.myIssues}
+            </h3>
+            <p style={{
+              color: '#93c5fd',
+              fontSize: '14px',
+              fontWeight: '500',
+              margin: '0'
+            }}>
+              📋 My Issues
+            </p>
+          </div>
+
+          {/* In Progress Card */}
+          <div style={{
+            background: 'rgba(251, 191, 36, 0.1)',
+            border: '1px solid rgba(251, 191, 36, 0.3)',
+            borderRadius: '16px',
+            padding: '20px',
+            textAlign: 'center',
+            transition: 'all 0.3s ease',
+            cursor: 'pointer'
+          }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-5px)';
+              e.currentTarget.style.boxShadow = '0 20px 40px rgba(251, 191, 36, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            <h3 style={{
+              fontSize: '32px',
+              fontWeight: 'bold',
+              color: '#fbbf24',
+              margin: '0 0 8px 0'
+            }}>
+              {stats.inProgress}
+            </h3>
+            <p style={{
+              color: '#fcd34d',
+              fontSize: '14px',
+              fontWeight: '500',
+              margin: '0'
+            }}>
+              🔧 In Progress
+            </p>
+          </div>
+
+          {/* Resolved Card */}
+          <div style={{
+            background: 'rgba(34, 197, 94, 0.1)',
+            border: '1px solid rgba(34, 197, 94, 0.3)',
+            borderRadius: '16px',
+            padding: '20px',
+            textAlign: 'center',
+            transition: 'all 0.3s ease',
+            cursor: 'pointer'
+          }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-5px)';
+              e.currentTarget.style.boxShadow = '0 20px 40px rgba(34, 197, 94, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            <h3 style={{
+              fontSize: '32px',
+              fontWeight: 'bold',
+              color: '#22c55e',
+              margin: '0 0 8px 0'
+            }}>
+              {stats.resolved}
+            </h3>
+            <p style={{
+              color: '#86efac',
+              fontSize: '14px',
+              fontWeight: '500',
+              margin: '0'
+            }}>
+              ✅ Resolved
+            </p>
           </div>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 py-6">
-        {/* Quick Stats */}
-        <QuickStats stats={stats} userType="user" />
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Main Content */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+          gap: '24px'
+        }}>
           {/* Upload Form Section */}
-          <div className="order-2 lg:order-1">
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: '16px',
+            padding: '20px',
+            border: '1px solid rgba(255, 255, 255, 0.1)'
+          }}>
+            <h2 style={{
+              fontSize: '20px',
+              fontWeight: 'bold',
+              marginBottom: '16px',
+              color: '#3b82f6',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              📤 Report New Issue
+            </h2>
             <UploadForm />
           </div>
 
           {/* Issues List Section */}
-          <div className="order-1 lg:order-2">
-            <div className="premium-card hover-lift">
-              <div className="p-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold gradient-text-premium flex items-center gap-2">
-                  📋 Your Issues
-                  <span className="status-badge bg-gray-100 text-gray-600">
-                    Track Status
-                  </span>
-                </h2>
-              </div>
-              <div className="p-4">
-                <IssueList />
-              </div>
-            </div>
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: '16px',
+            padding: '20px',
+            border: '1px solid rgba(255, 255, 255, 0.1)'
+          }}>
+            <h2 style={{
+              fontSize: '20px',
+              fontWeight: 'bold',
+              marginBottom: '16px',
+              color: '#3b82f6',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              📋 Your Issues ({stats.myIssues})
+            </h2>
+            <IssueList />
           </div>
         </div>
       </div>

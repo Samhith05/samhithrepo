@@ -24,13 +24,15 @@ function App() {
     isDeniedUser,
     roleError,
     userStatus,
+    userRole,
   } = useAuth();
 
-  console.log("App render - roleError:", roleError);
-  console.log("App render - user:", user?.email);
-  console.log("App render - isAdmin:", isAdmin);
-  console.log("App render - isContractor:", isContractor);
-  console.log("App render - userStatus:", userStatus);
+  console.log("🚀 App render - roleError:", roleError);
+  console.log("🚀 App render - user:", user?.email);
+  console.log("🚀 App render - isAdmin:", isAdmin);
+  console.log("🚀 App render - isContractor:", isContractor);
+  console.log("🚀 App render - userStatus:", userStatus);
+  console.log("🚀 App render - userRole:", userRole);
 
   // Show loading spinner while checking authentication
   if (userStatus === "loading") {
