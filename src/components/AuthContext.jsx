@@ -70,7 +70,9 @@ export function AuthProvider({ children }) {
         setUserRole("admin");
         setRoleError(null);
         return;
-      }            // Check if user is a pre-approved contractor
+      }
+
+      // Check if user is a pre-approved contractor
       if (PRE_APPROVED_CONTRACTORS[firebaseUser.email]) {
         console.log("🔧 Pre-approved contractor detected:", firebaseUser.email);
         const category = PRE_APPROVED_CONTRACTORS[firebaseUser.email];
@@ -107,6 +109,9 @@ export function AuthProvider({ children }) {
         console.log("✅ User found in approved users:", userData);
         setUserStatus("approved");
         setUserRole(userData.role || "user");
+        if (userData.role === "contractor") {
+          setContractorCategory(userData.contractorCategory || userData.category);
+        }
         setRoleError(null);
         return;
       }
@@ -121,11 +126,13 @@ export function AuthProvider({ children }) {
         if (contractorData.status === "approved") {
           setUserStatus("approved");
           setUserRole("contractor");
+          setContractorCategory(contractorData.category || contractorData.contractorCategory);
           setRoleError(null);
           return;
         } else {
           setUserStatus("pending");
           setUserRole("contractor");
+          setContractorCategory(contractorData.category || contractorData.contractorCategory);
           setRoleError(null);
           return;
         }
@@ -184,61 +191,66 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const checkExistingUserStatus = async (firebaseUser, role) => {
+  const login = async (role = null, contractorCategory = null, alreadyAuthenticated = false) => {
+    console.log("🔍 AuthContext Login called with role:", role);
+    setRoleError(null);
+
     try {
-      // Check if user is already in approved users
-      const approvedDoc = await getDoc(
-        doc(db, "approvedUsers", firebaseUser.uid)
-      );
-      if (approvedDoc.exists()) {
-        console.log("User already exists in approved users");
-        return true;
+      let result;
+
+      if (alreadyAuthenticated) {
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+          throw new Error("No authenticated user found");
+        }
+        result = { user: currentUser };
+      } else {
+        const provider = new GoogleAuthProvider();
+        result = await signInWithPopup(auth, provider);
       }
 
-      // Check if user has pending approval
-      const pendingDoc = await getDoc(
-        doc(db, "pendingApprovals", firebaseUser.uid)
-      );
-      if (pendingDoc.exists()) {
-        console.log("User already has pending approval");
-        return true;
+      // Admin role check
+      if (role === "admin" && !ADMIN_EMAILS.includes(result.user.email)) {
+        setRoleError({
+          type: "admin_access_denied",
+          message: "Access Denied: You are not an administrator."
+        });
+        return;
+      }
+
+      // Admin trying user role
+      if (role === "user" && ADMIN_EMAILS.includes(result.user.email)) {
+        setRoleError({
+          type: "admin_role_conflict",
+          message: "Access Denied: Administrators must use the Admin role."
+        });
+        return;
       }
 
       // For contractors, create application if new
       if (role === "contractor") {
-        const contractorDoc = await getDoc(doc(db, "contractorApprovals", currentUser.uid));
+        const contractorDoc = await getDoc(doc(db, "contractorApprovals", result.user.uid));
 
         if (!contractorDoc.exists()) {
-          // Create contractor application
-          await setDoc(doc(db, "contractorApprovals", currentUser.uid), {
-            uid: currentUser.uid,
-            email: currentUser.email,
-            displayName: currentUser.displayName || "",
-            photoURL: currentUser.photoURL || "",
-            requestedAt: Timestamp.now(),
-            status: "pending",
-            role: "contractor",
-            category: "general" // Default category
-          });
-
+          await createApprovalRequest(result.user, role, contractorCategory);
           setUserStatus("pending");
           setUserRole("contractor");
+          setContractorCategory(contractorCategory);
           console.log("✅ Contractor application created");
-          return;
+          return result;
         }
       }
 
-      // For users, create approval request if new
+      // For users, auto-approve
       if (role === "user") {
-        const userDoc = await getDoc(doc(db, "approvedUsers", currentUser.uid));
+        const userDoc = await getDoc(doc(db, "approvedUsers", result.user.uid));
 
         if (!userDoc.exists()) {
-          // Auto-approve regular users
-          await setDoc(doc(db, "approvedUsers", currentUser.uid), {
-            uid: currentUser.uid,
-            email: currentUser.email,
-            displayName: currentUser.displayName || "",
-            photoURL: currentUser.photoURL || "",
+          await setDoc(doc(db, "approvedUsers", result.user.uid), {
+            uid: result.user.uid,
+            email: result.user.email,
+            displayName: result.user.displayName || "",
+            photoURL: result.user.photoURL || "",
             approvedAt: Timestamp.now(),
             status: "approved",
             role: "user"
@@ -247,22 +259,24 @@ export function AuthProvider({ children }) {
           setUserStatus("approved");
           setUserRole("user");
           console.log("✅ User auto-approved");
-          return;
         }
       }
 
+      return result;
     } catch (error) {
       console.error("❌ Login failed:", error);
       setRoleError({
         type: "login_error",
         message: "Login failed. Please try again."
       });
+      throw error;
     }
   };
 
   const logout = () => {
     setRoleError(null);
     setUserRole(null);
+    setContractorCategory(null);
     return signOut(auth);
   };
 
@@ -282,6 +296,7 @@ export function AuthProvider({ children }) {
         isApprovedUser,
         isContractor,
         isPendingApproval,
+        isDeniedUser,
         userStatus,
         userRole,
         contractorCategory,
